@@ -1,0 +1,19 @@
+# Python / Virtual Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# SPHEREx Backend Cache & FITS downloads
+backend/cache/
+backend/*.fits
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/

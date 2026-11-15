@@ -1,0 +1,170 @@
+{
+  "query_ra_deg": 76.956533,
+  "query_dec_deg": 30.401433,
+  "fov_arcmin": 15.0,
+  "detector": "D1",
+  "available_detectors": [
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6"
+  ],
+  "alignment_mode": "fixed_sky",
+  "sampling_mode": "epoch_best",
+  "isolate_moving_object": false,
+  "can_animate": true,
+  "total_frames": 4,
+  "epochs_covered": [
+    "2025-S2",
+    "2026-S1"
+  ],
+  "ordered_dates": [
+    "2025-09-03T17:28:50.304",
+    "2025-09-04T01:37:57.360",
+    "2026-03-04T07:54:38.045",
+    "2026-03-06T05:35:12.365"
+  ],
+  "shape_ny_nx": [
+    146,
+    146
+  ],
+  "pixel_scale_arcsec": 6.153,
+  "orientation": {
+    "north": "up",
+    "east": "left",
+    "origin": "top_left"
+  },
+  "flux_unit": "MJy/sr",
+  "display_scale": {
+    "vmin": -0.0715,
+    "vmax": 3.55973,
+    "stretch": "asinh",
+    "colormap": "inferno"
+  },
+  "angular_displacement_arcsec": 0.384,
+  "time_baseline_days": 183.5,
+  "frame_duration_ms": 650,
+  "gif_url": "/api/cache/timelapse_RW_Aurigae_D1_fixed_sky_f0159c86aa2534.gif",
+  "gif_download_url": "/api/cache/timelapse_RW_Aurigae_D1_fixed_sky_f0159c86aa2534.gif?download_name=SPHEREx_TimeLapse_RW_Aurigae_D1_fixed_sky.gif",
+  "download_filename": "SPHEREx_TimeLapse_RW_Aurigae_D1_fixed_sky.gif",
+  "scientific_warning": null,
+  "frames": [
+    {
+      "frame_index": 0,
+      "obs_id": "01a0db44-3179-7003-9e5c-48fde8badaa0",
+      "epoch_id": "2025-S2",
+      "detector": "D1",
+      "date_iso": "2025-09-03T17:28:50.304",
+      "mjd": 60921.72836,
+      "wavelength_um": 0.9209,
+      "bandwidth_um": 0.024,
+      "usable_pixel_fraction": 0.9948,
+      "background_mjy_sr": 0.10269,
+      "noise_std_mjy_sr": 0.04123,
+      "object_ra_deg": 76.956248,
+      "object_dec_deg": 30.401153,
+      "flux_mjy_sr": 10.99164,
+      "flux_ujy": 78248.538,
+      "snr": 262.44,
+      "quality_flag": 2097154,
+      "flag_labels": [
+        "OVERFLOW",
+        "SOURCE"
+      ],
+      "target_px": {
+        "x": 72.64,
+        "y": 72.66
+      },
+      "cutout_fits_url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_4D1_spx_l2b-v27-2026-232.fits?center=76.956533,30.401433d&size=0.2500",
+      "frame_png_url": "/api/cache/tl_frame_f0159c86aa2534_00.png"
+    },
+    {
+      "frame_index": 1,
+      "obs_id": "01a0db4b-e136-7a5f-a197-7ab063a5ad58",
+      "epoch_id": "2025-S2",
+      "detector": "D1",
+      "date_iso": "2025-09-04T01:37:57.360",
+      "mjd": 60922.068025,
+      "wavelength_um": 0.9651,
+      "bandwidth_um": 0.025,
+      "usable_pixel_fraction": 0.9932,
+      "background_mjy_sr": 0.09612,
+      "noise_std_mjy_sr": 0.04312,
+      "object_ra_deg": 76.956299,
+      "object_dec_deg": 30.401217,
+      "flux_mjy_sr": 20.18767,
+      "flux_ujy": 161625.959,
+      "snr": 383.48,
+      "quality_flag": 2097152,
+      "flag_labels": [
+        "SOURCE"
+      ],
+      "target_px": {
+        "x": 72.62,
+        "y": 72.63
+      },
+      "cutout_fits_url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0677_2D1_spx_l2b-v27-2026-232.fits?center=76.956533,30.401433d&size=0.2500",
+      "frame_png_url": "/api/cache/tl_frame_f0159c86aa2534_01.png"
+    },
+    {
+      "frame_index": 2,
+      "obs_id": "01a0ec2c-1390-7fc2-8153-7caf4a1d3805",
+      "epoch_id": "2026-S1",
+      "detector": "D1",
+      "date_iso": "2026-03-04T07:54:38.045",
+      "mjd": 61103.329607,
+      "wavelength_um": 0.8573,
+      "bandwidth_um": 0.0212,
+      "usable_pixel_fraction": 0.9949,
+      "background_mjy_sr": 0.08641,
+      "noise_std_mjy_sr": 0.03831,
+      "object_ra_deg": 76.956333,
+      "object_dec_deg": 30.401244,
+      "flux_mjy_sr": 14.45528,
+      "flux_ujy": 102772.073,
+      "snr": 299.64,
+      "quality_flag": 2097154,
+      "flag_labels": [
+        "OVERFLOW",
+        "SOURCE"
+      ],
+      "target_px": {
+        "x": 72.6,
+        "y": 72.61
+      },
+      "cutout_fits_url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W10_1A/l2b-v27-2026-229/1/level2_2026W10_1A_0445_1D1_spx_l2b-v27-2026-229.fits?center=76.956533,30.401433d&size=0.2500",
+      "frame_png_url": "/api/cache/tl_frame_f0159c86aa2534_02.png"
+    },
+    {
+      "frame_index": 3,
+      "obs_id": "01a0ec5d-affb-7baf-94d7-0abe78c84906",
+      "epoch_id": "2026-S1",
+      "detector": "D1",
+      "date_iso": "2026-03-06T05:35:12.365",
+      "mjd": 61105.232782,
+      "wavelength_um": 0.9881,
+      "bandwidth_um": 0.026,
+      "usable_pixel_fraction": 0.9933,
+      "background_mjy_sr": 0.09424,
+      "noise_std_mjy_sr": 0.04313,
+      "object_ra_deg": 76.956263,
+      "object_dec_deg": 30.401259,
+      "flux_mjy_sr": 10.96666,
+      "flux_ujy": 78045.291,
+      "snr": 260.01,
+      "quality_flag": 2097154,
+      "flag_labels": [
+        "OVERFLOW",
+        "SOURCE"
+      ],
+      "target_px": {
+        "x": 72.64,
+        "y": 72.6
+      },
+      "cutout_fits_url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W10_2B/l2b-v27-2026-231/1/level2_2026W10_2B_0137_3D1_spx_l2b-v27-2026-231.fits?center=76.956533,30.401433d&size=0.2500",
+      "frame_png_url": "/api/cache/tl_frame_f0159c86aa2534_03.png"
+    }
+  ]
+}

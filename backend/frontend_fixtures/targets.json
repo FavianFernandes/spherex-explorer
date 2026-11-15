@@ -1,0 +1,52 @@
+[
+  {
+    "id": "wise-0855",
+    "name": "WISE 0855-0714",
+    "category": "Cold Sub-Brown Dwarf (Fast Moving)",
+    "ra": "08h55m10.831s",
+    "dec": "-07d14m42.53s",
+    "ra_deg": 133.795129,
+    "dec_deg": -7.245147,
+    "description": "Coldest known brown dwarf (~250 K) located 7.4 ly away with ~8.1 arcsec/yr proper motion."
+  },
+  {
+    "id": "barnards-star",
+    "name": "Barnard's Star",
+    "category": "High Proper Motion Red Dwarf",
+    "ra": "17h57m48.498s",
+    "dec": "+04d41m36.11s",
+    "ra_deg": 269.452075,
+    "dec_deg": 4.693364,
+    "description": "Highest proper motion star in the sky (~10.3 arcsec/yr)."
+  },
+  {
+    "id": "eps-indi-b",
+    "name": "Epsilon Indi Ba/Bb",
+    "category": "Brown Dwarf Binary (T1 + T6)",
+    "ra": "22h04m10.52s",
+    "dec": "-56d46m57.7s",
+    "ra_deg": 331.043833,
+    "dec_deg": -56.782694,
+    "description": "Benchmark brown dwarf binary exhibiting strong H2O and CH4 infrared absorption."
+  },
+  {
+    "id": "rw-aur",
+    "name": "RW Aurigae",
+    "category": "Young T Tauri Variable Star",
+    "ra": "05h07m49.568s",
+    "dec": "+30d24m05.16s",
+    "ra_deg": 76.956533,
+    "dec_deg": 30.401433,
+    "description": "Pre-main-sequence variable star with strong infrared brightness changes."
+  },
+  {
+    "id": "r-dra",
+    "name": "R Draconis",
+    "category": "Mira Variable Star",
+    "ra": "16h32m40.227s",
+    "dec": "+66d45m17.86s",
+    "ra_deg": 248.167612,
+    "dec_deg": 66.754961,
+    "description": "Pulsating red giant variable with dramatic multi-epoch flux modulation."
+  }
+]

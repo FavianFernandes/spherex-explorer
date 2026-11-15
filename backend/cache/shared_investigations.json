@@ -1,0 +1,33 @@
+{
+  "d2a61a1eb4": {
+    "share_id": "d2a61a1eb4",
+    "share_query_string": "?share=d2a61a1eb4&ra=133.795129&dec=-7.245147&fov=15.0&det=D6&mode=follow_object&view=timelapse",
+    "created_at": "2026-11-15T10:46:44.910099+00:00",
+    "state": {
+      "ra": 133.795129,
+      "dec": -7.245147,
+      "fov_arcmin": 15.0,
+      "detector": "D6",
+      "wavelength_band": "4.86um",
+      "selected_epoch": "2025-S1",
+      "selected_obs_id": null,
+      "selected_cutout_fits_url": null,
+      "earlier_epoch": "2025-S1",
+      "later_epoch": "2026-S1",
+      "early_cutout_fits_url": null,
+      "late_cutout_fits_url": null,
+      "selected_object_id": null,
+      "selected_object_ra": null,
+      "selected_object_dec": null,
+      "alignment_mode": "follow_object",
+      "active_view": "timelapse",
+      "overlays_enabled": [
+        "gaia",
+        "wise"
+      ],
+      "playback_speed": 1.0,
+      "loop": true,
+      "notes": null
+    }
+  }
+}

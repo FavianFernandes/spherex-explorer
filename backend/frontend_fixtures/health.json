@@ -1,0 +1,91 @@
+{
+  "status": "ok",
+  "service": "SPHEREx Explorer Backend",
+  "version": "2.4.0",
+  "quality_flag_definitions": {
+    "TRANSIENT": {
+      "bit": 0,
+      "mask": 1,
+      "description": "Cosmic ray or transient spike detected in exposure",
+      "unusable": false
+    },
+    "OVERFLOW": {
+      "bit": 1,
+      "mask": 2,
+      "description": "Detector ADC saturation / overflow",
+      "unusable": true
+    },
+    "SUR_ERROR": {
+      "bit": 2,
+      "mask": 4,
+      "description": "Sample-Up-the-Ramp (SUR) fit error",
+      "unusable": true
+    },
+    "NONFUNC": {
+      "bit": 6,
+      "mask": 64,
+      "description": "Non-functional / dead detector pixel",
+      "unusable": true
+    },
+    "DICHROIC": {
+      "bit": 7,
+      "mask": 128,
+      "description": "Dichroic beam-splitter edge artifact",
+      "unusable": false
+    },
+    "MISSING_DATA": {
+      "bit": 9,
+      "mask": 512,
+      "description": "Missing telemetry or truncated readout",
+      "unusable": true
+    },
+    "HOT": {
+      "bit": 10,
+      "mask": 1024,
+      "description": "Anomalously high dark-current hot pixel",
+      "unusable": false
+    },
+    "COLD": {
+      "bit": 11,
+      "mask": 2048,
+      "description": "Unresponsive cold pixel",
+      "unusable": true
+    },
+    "PHAN_MISS": {
+      "bit": 12,
+      "mask": 4096,
+      "description": "Phantom pixel missing reference correction",
+      "unusable": false
+    },
+    "NONLINEAR": {
+      "bit": 14,
+      "mask": 16384,
+      "description": "High non-linearity regime",
+      "unusable": false
+    },
+    "PERSIST": {
+      "bit": 15,
+      "mask": 32768,
+      "description": "Persistence artifact from prior bright source",
+      "unusable": false
+    },
+    "OUTLIER": {
+      "bit": 17,
+      "mask": 131072,
+      "description": "Statistical outlier flagged during pipeline calibration",
+      "unusable": false
+    },
+    "GHOST": {
+      "bit": 19,
+      "mask": 524288,
+      "description": "Optical ghost reflection candidate",
+      "unusable": false
+    },
+    "SOURCE": {
+      "bit": 21,
+      "mask": 2097152,
+      "description": "Confirmed astrophysical source detected at pixel",
+      "unusable": false
+    }
+  }
+}

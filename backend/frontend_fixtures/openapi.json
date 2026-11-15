@@ -1,0 +1,2984 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NASA SPHEREx Explorer API",
+    "description": "Complete scientific backend for exploring NASA/IPAC IRSA SPHEREx Level-2 Multi-Extension FITS data, 102-band infrared spectrophotometry, interactive 3-graph spectral comparisons, WCS difference imaging, variance-weighted stacking, 6-month Time-Lapse GIF animations, moving object isolation, and Gaia DR3 / AllWISE / CSA NEOSSat multi-mission overlays.",
+    "version": "2.4.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/targets": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Get Sample Targets",
+        "operationId": "get_sample_targets_api_targets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Search Spherex",
+        "operationId": "search_spherex_api_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/preview": {
+      "get": {
+        "tags": [
+          "Imaging"
+        ],
+        "summary": "Get Preview Png",
+        "operationId": "get_preview_png_api_preview_get",
+        "parameters": [
+          {
+            "name": "cutout_url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "IRSA cutout FITS URL",
+              "title": "Cutout Url"
+            },
+            "description": "IRSA cutout FITS URL"
+          },
+          {
+            "name": "ra",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ra"
+            }
+          },
+          {
+            "name": "dec",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dec"
+            }
+          },
+          {
+            "name": "fov_arcmin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 15.0,
+              "title": "Fov Arcmin"
+            }
+          },
+          {
+            "name": "north_up",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "North Up"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/preview/metadata": {
+      "get": {
+        "tags": [
+          "Imaging"
+        ],
+        "summary": "Get Preview Metadata",
+        "operationId": "get_preview_metadata_api_preview_metadata_get",
+        "parameters": [
+          {
+            "name": "cutout_url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "IRSA cutout FITS URL",
+              "title": "Cutout Url"
+            },
+            "description": "IRSA cutout FITS URL"
+          },
+          {
+            "name": "ra",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ra"
+            }
+          },
+          {
+            "name": "dec",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dec"
+            }
+          },
+          {
+            "name": "fov_arcmin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 15.0,
+              "title": "Fov Arcmin"
+            }
+          },
+          {
+            "name": "north_up",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "North Up"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cache/{filename}": {
+      "get": {
+        "tags": [
+          "Imaging"
+        ],
+        "summary": "Get Cached Image",
+        "operationId": "get_cached_image_api_cache__filename__get",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Filename"
+            }
+          },
+          {
+            "name": "download_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Download Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/identify": {
+      "post": {
+        "tags": [
+          "Photometry"
+        ],
+        "summary": "Identify Object",
+        "operationId": "identify_object_api_objects_identify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentifyObjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentifyObjectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/{object_id}": {
+      "get": {
+        "tags": [
+          "Photometry"
+        ],
+        "summary": "Lookup Object By Id",
+        "operationId": "lookup_object_by_id_api_objects__object_id__get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/track": {
+      "post": {
+        "tags": [
+          "Photometry"
+        ],
+        "summary": "Track Object",
+        "operationId": "track_object_api_objects_track_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObjectTrackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/lightcurve": {
+      "post": {
+        "tags": [
+          "Photometry"
+        ],
+        "summary": "Extract Lightcurve",
+        "operationId": "extract_lightcurve_api_objects_lightcurve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LightCurveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/spectra/compare": {
+      "post": {
+        "tags": [
+          "Spectroscopy"
+        ],
+        "summary": "Compare Spectra",
+        "operationId": "compare_spectra_api_spectra_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpectrumCompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpectrumCompareResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/images/difference": {
+      "post": {
+        "tags": [
+          "Imaging"
+        ],
+        "summary": "Difference Images",
+        "operationId": "difference_images_api_images_difference_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DifferenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DifferenceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/images/stack": {
+      "post": {
+        "tags": [
+          "Imaging"
+        ],
+        "summary": "Stack Images",
+        "operationId": "stack_images_api_images_stack_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StackResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/objects/isolate": {
+      "post": {
+        "tags": [
+          "Imaging"
+        ],
+        "summary": "Isolate Object",
+        "operationId": "isolate_object_api_objects_isolate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IsolateObjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IsolateObjectResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/images/timelapse": {
+      "post": {
+        "tags": [
+          "Imaging"
+        ],
+        "summary": "Create Timelapse",
+        "operationId": "create_timelapse_api_images_timelapse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeLapseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeLapseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/overlays": {
+      "post": {
+        "tags": [
+          "Multi-Mission"
+        ],
+        "summary": "Get Multi Mission Overlays",
+        "operationId": "get_multi_mission_overlays_api_overlays_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverlaysRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/share": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Create Share Link",
+        "operationId": "create_share_link_api_share_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareInvestigationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/share/{share_id}": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Get Shared Investigation",
+        "operationId": "get_shared_investigation_api_share__share_id__get",
+        "parameters": [
+          {
+            "name": "share_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Share Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs": {
+      "post": {
+        "tags": [
+          "Async Jobs"
+        ],
+        "summary": "Submit Job",
+        "operationId": "submit_job_api_jobs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "Async Jobs"
+        ],
+        "summary": "Get Job Status",
+        "operationId": "get_job_status_api_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "Async Jobs"
+        ],
+        "summary": "Cancel Job",
+        "operationId": "cancel_job_api_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DifferenceRequest": {
+        "properties": {
+          "early_cutout_fits_url": {
+            "type": "string",
+            "title": "Early Cutout Fits Url"
+          },
+          "late_cutout_fits_url": {
+            "type": "string",
+            "title": "Late Cutout Fits Url"
+          },
+          "ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Ra"
+          },
+          "dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dec"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 5.0,
+            "title": "Fov Arcmin",
+            "default": 15.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "early_cutout_fits_url",
+          "late_cutout_fits_url",
+          "ra"
+        ],
+        "title": "DifferenceRequest"
+      },
+      "DifferenceResponse": {
+        "properties": {
+          "diff_key": {
+            "type": "string",
+            "title": "Diff Key"
+          },
+          "difference_png_url": {
+            "type": "string",
+            "title": "Difference Png Url"
+          },
+          "significance_png_url": {
+            "type": "string",
+            "title": "Significance Png Url"
+          },
+          "early_date": {
+            "type": "string",
+            "title": "Early Date"
+          },
+          "late_date": {
+            "type": "string",
+            "title": "Late Date"
+          },
+          "early_wavelength_um": {
+            "type": "number",
+            "title": "Early Wavelength Um"
+          },
+          "late_wavelength_um": {
+            "type": "number",
+            "title": "Late Wavelength Um"
+          },
+          "photometric_scale_factor": {
+            "type": "number",
+            "title": "Photometric Scale Factor"
+          },
+          "wavelength_compatible": {
+            "type": "boolean",
+            "title": "Wavelength Compatible"
+          },
+          "scientific_warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scientific Warning"
+          },
+          "shape_ny_nx": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Shape Ny Nx"
+          },
+          "pixel_scale_arcsec": {
+            "type": "number",
+            "title": "Pixel Scale Arcsec",
+            "default": 6.15
+          },
+          "orientation": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Orientation",
+            "default": {
+              "north": "up",
+              "east": "left",
+              "origin": "top_left"
+            }
+          },
+          "flux_unit": {
+            "type": "string",
+            "title": "Flux Unit",
+            "default": "MJy/sr"
+          },
+          "display_scale": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Scale"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "comparable_with": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Comparable With"
+          },
+          "candidates": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "diff_key",
+          "difference_png_url",
+          "significance_png_url",
+          "early_date",
+          "late_date",
+          "early_wavelength_um",
+          "late_wavelength_um",
+          "photometric_scale_factor",
+          "wavelength_compatible",
+          "shape_ny_nx",
+          "target_px",
+          "comparable_with",
+          "candidates"
+        ],
+        "title": "DifferenceResponse"
+      },
+      "EpochBucket": {
+        "properties": {
+          "epoch_id": {
+            "type": "string",
+            "title": "Epoch Id"
+          },
+          "start_date": {
+            "type": "string",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "title": "End Date"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "detectors_available": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Detectors Available"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationFrame"
+            },
+            "type": "array",
+            "title": "Observations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "epoch_id",
+          "start_date",
+          "end_date",
+          "count",
+          "detectors_available",
+          "observations"
+        ],
+        "title": "EpochBucket"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IdentifyObjectRequest": {
+        "properties": {
+          "cutout_fits_url": {
+            "type": "string",
+            "title": "Cutout Fits Url"
+          },
+          "click_x": {
+            "type": "number",
+            "title": "Click X"
+          },
+          "click_y": {
+            "type": "number",
+            "title": "Click Y"
+          },
+          "rendered_width": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Rendered Width",
+            "default": 146.0
+          },
+          "rendered_height": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Rendered Height",
+            "default": 146.0
+          },
+          "center_ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Center Ra"
+          },
+          "center_dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Center Dec"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 5.0,
+            "title": "Fov Arcmin",
+            "default": 15.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "cutout_fits_url",
+          "click_x",
+          "click_y"
+        ],
+        "title": "IdentifyObjectRequest"
+      },
+      "IdentifyObjectResponse": {
+        "properties": {
+          "object_id": {
+            "type": "string",
+            "title": "Object Id"
+          },
+          "ra_deg": {
+            "type": "number",
+            "title": "Ra Deg"
+          },
+          "dec_deg": {
+            "type": "number",
+            "title": "Dec Deg"
+          },
+          "ra_hms": {
+            "type": "string",
+            "title": "Ra Hms"
+          },
+          "dec_dms": {
+            "type": "string",
+            "title": "Dec Dms"
+          },
+          "fits_x": {
+            "type": "number",
+            "title": "Fits X"
+          },
+          "fits_y": {
+            "type": "number",
+            "title": "Fits Y"
+          },
+          "png_x": {
+            "type": "number",
+            "title": "Png X"
+          },
+          "png_y": {
+            "type": "number",
+            "title": "Png Y"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "flux_mjy_sr": {
+            "type": "number",
+            "title": "Flux Mjy Sr"
+          },
+          "flux_err_mjy_sr": {
+            "type": "number",
+            "title": "Flux Err Mjy Sr"
+          },
+          "flux_ujy": {
+            "type": "number",
+            "title": "Flux Ujy"
+          },
+          "flux_err_ujy": {
+            "type": "number",
+            "title": "Flux Err Ujy"
+          },
+          "background_mjy_sr": {
+            "type": "number",
+            "title": "Background Mjy Sr"
+          },
+          "snr": {
+            "type": "number",
+            "title": "Snr"
+          },
+          "position_err_arcsec": {
+            "type": "number",
+            "title": "Position Err Arcsec"
+          },
+          "quality_flag": {
+            "type": "integer",
+            "title": "Quality Flag"
+          },
+          "flag_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flag Labels"
+          },
+          "is_usable": {
+            "type": "boolean",
+            "title": "Is Usable"
+          },
+          "wavelength_um": {
+            "type": "number",
+            "title": "Wavelength Um"
+          },
+          "bandwidth_um": {
+            "type": "number",
+            "title": "Bandwidth Um"
+          },
+          "date_obs": {
+            "type": "string",
+            "title": "Date Obs"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "gaia_crossmatch": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gaia Crossmatch"
+          },
+          "wise_matches": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wise Matches"
+          }
+        },
+        "type": "object",
+        "required": [
+          "object_id",
+          "ra_deg",
+          "dec_deg",
+          "ra_hms",
+          "dec_dms",
+          "fits_x",
+          "fits_y",
+          "png_x",
+          "png_y",
+          "target_px",
+          "flux_mjy_sr",
+          "flux_err_mjy_sr",
+          "flux_ujy",
+          "flux_err_ujy",
+          "background_mjy_sr",
+          "snr",
+          "position_err_arcsec",
+          "quality_flag",
+          "flag_labels",
+          "is_usable",
+          "wavelength_um",
+          "bandwidth_um",
+          "date_obs",
+          "detector"
+        ],
+        "title": "IdentifyObjectResponse"
+      },
+      "IsolateObjectRequest": {
+        "properties": {
+          "early_cutout_fits_url": {
+            "type": "string",
+            "title": "Early Cutout Fits Url"
+          },
+          "late_cutout_fits_url": {
+            "type": "string",
+            "title": "Late Cutout Fits Url"
+          },
+          "object_ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Object Ra"
+          },
+          "object_dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Dec"
+          },
+          "isolation_radius_pix": {
+            "type": "number",
+            "maximum": 15.0,
+            "minimum": 2.0,
+            "title": "Isolation Radius Pix",
+            "default": 4.5
+          }
+        },
+        "type": "object",
+        "required": [
+          "early_cutout_fits_url",
+          "late_cutout_fits_url",
+          "object_ra"
+        ],
+        "title": "IsolateObjectRequest"
+      },
+      "IsolateObjectResponse": {
+        "properties": {
+          "early_epoch_isolated": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Early Epoch Isolated"
+          },
+          "late_epoch_isolated": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Late Epoch Isolated"
+          },
+          "angular_displacement_arcsec": {
+            "type": "number",
+            "title": "Angular Displacement Arcsec"
+          },
+          "displacement_err_arcsec": {
+            "type": "number",
+            "title": "Displacement Err Arcsec"
+          },
+          "time_baseline_days": {
+            "type": "number",
+            "title": "Time Baseline Days"
+          },
+          "apparent_motion_arcsec_per_yr": {
+            "type": "number",
+            "title": "Apparent Motion Arcsec Per Yr"
+          },
+          "motion_err_arcsec_per_yr": {
+            "type": "number",
+            "title": "Motion Err Arcsec Per Yr"
+          }
+        },
+        "type": "object",
+        "required": [
+          "early_epoch_isolated",
+          "late_epoch_isolated",
+          "angular_displacement_arcsec",
+          "displacement_err_arcsec",
+          "time_baseline_days",
+          "apparent_motion_arcsec_per_yr",
+          "motion_err_arcsec_per_yr"
+        ],
+        "title": "IsolateObjectResponse"
+      },
+      "JobCreateRequest": {
+        "properties": {
+          "job_type": {
+            "type": "string",
+            "enum": [
+              "spectra_compare",
+              "image_difference",
+              "image_stack",
+              "object_isolate",
+              "timelapse"
+            ],
+            "title": "Job Type"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_type",
+          "payload"
+        ],
+        "title": "JobCreateRequest"
+      },
+      "JobStatusResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "job_type": {
+            "type": "string",
+            "title": "Job Type"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "progress_pct": {
+            "type": "number",
+            "title": "Progress Pct"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "result": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "job_type",
+          "status",
+          "progress_pct",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "JobStatusResponse"
+      },
+      "LightCurveRequest": {
+        "properties": {
+          "ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Ra"
+          },
+          "dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dec"
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector"
+          },
+          "max_exposures": {
+            "type": "integer",
+            "maximum": 60.0,
+            "minimum": 2.0,
+            "title": "Max Exposures",
+            "default": 24
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra"
+        ],
+        "title": "LightCurveRequest"
+      },
+      "ObjectTrackRequest": {
+        "properties": {
+          "object_ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Object Ra"
+          },
+          "object_dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Dec"
+          },
+          "cutout_fits_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Cutout Fits Urls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "object_ra",
+          "cutout_fits_urls"
+        ],
+        "title": "ObjectTrackRequest"
+      },
+      "ObservationFrame": {
+        "properties": {
+          "obs_id": {
+            "type": "string",
+            "title": "Obs Id"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "mjd": {
+            "type": "number",
+            "title": "Mjd"
+          },
+          "date_iso": {
+            "type": "string",
+            "title": "Date Iso"
+          },
+          "em_min_um": {
+            "type": "number",
+            "title": "Em Min Um"
+          },
+          "em_max_um": {
+            "type": "number",
+            "title": "Em Max Um"
+          },
+          "release": {
+            "type": "string",
+            "title": "Release"
+          },
+          "survey_week": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Survey Week",
+            "default": "UNKNOWN"
+          },
+          "survey_pass": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Survey Pass",
+            "default": "UNKNOWN"
+          },
+          "pixel_scale_arcsec": {
+            "type": "number",
+            "title": "Pixel Scale Arcsec",
+            "default": 6.15
+          },
+          "flux_unit": {
+            "type": "string",
+            "title": "Flux Unit",
+            "default": "MJy/sr"
+          },
+          "full_fits_url": {
+            "type": "string",
+            "title": "Full Fits Url"
+          },
+          "cutout_fits_url": {
+            "type": "string",
+            "title": "Cutout Fits Url"
+          },
+          "preview_png_url": {
+            "type": "string",
+            "title": "Preview Png Url"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "comparable_with": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Comparable With"
+          }
+        },
+        "type": "object",
+        "required": [
+          "obs_id",
+          "detector",
+          "mjd",
+          "date_iso",
+          "em_min_um",
+          "em_max_um",
+          "release",
+          "full_fits_url",
+          "cutout_fits_url",
+          "preview_png_url",
+          "target_px",
+          "comparable_with"
+        ],
+        "title": "ObservationFrame"
+      },
+      "OverlaysRequest": {
+        "properties": {
+          "cutout_fits_url": {
+            "type": "string",
+            "title": "Cutout Fits Url"
+          },
+          "ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Ra"
+          },
+          "dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dec"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 5.0,
+            "title": "Fov Arcmin",
+            "default": 15.0
+          },
+          "include_wise_image_layer": {
+            "type": "boolean",
+            "title": "Include Wise Image Layer",
+            "default": true
+          },
+          "north_up_aligned": {
+            "type": "boolean",
+            "title": "North Up Aligned",
+            "default": true
+          },
+          "frame_cutout_urls": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame Cutout Urls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cutout_fits_url",
+          "ra"
+        ],
+        "title": "OverlaysRequest"
+      },
+      "PixelPoint": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "title": "Y"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "PixelPoint"
+      },
+      "SearchRequest": {
+        "properties": {
+          "ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Ra",
+            "description": "Right Ascension in degrees, HMS, or target name"
+          },
+          "dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dec",
+            "description": "Declination in degrees or DMS"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 5.0,
+            "title": "Fov Arcmin",
+            "default": 15.0
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector",
+            "description": "Optional filter for detector 1..6 or D1..D6"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra"
+        ],
+        "title": "SearchRequest"
+      },
+      "SearchResponse": {
+        "properties": {
+          "query_ra_deg": {
+            "type": "number",
+            "title": "Query Ra Deg"
+          },
+          "query_dec_deg": {
+            "type": "number",
+            "title": "Query Dec Deg"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "title": "Fov Arcmin"
+          },
+          "total_observations": {
+            "type": "integer",
+            "title": "Total Observations"
+          },
+          "detectors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Detectors"
+          },
+          "pixel_scale_arcsec": {
+            "type": "number",
+            "title": "Pixel Scale Arcsec",
+            "default": 6.15
+          },
+          "flux_unit": {
+            "type": "string",
+            "title": "Flux Unit",
+            "default": "MJy/sr"
+          },
+          "orientation": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Orientation",
+            "default": {
+              "north": "up",
+              "east": "left",
+              "origin": "top_left"
+            }
+          },
+          "wiseview_url": {
+            "type": "string",
+            "title": "Wiseview Url"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "epochs": {
+            "items": {
+              "$ref": "#/components/schemas/EpochBucket"
+            },
+            "type": "array",
+            "title": "Epochs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_ra_deg",
+          "query_dec_deg",
+          "fov_arcmin",
+          "total_observations",
+          "detectors",
+          "wiseview_url",
+          "target_px",
+          "epochs"
+        ],
+        "title": "SearchResponse"
+      },
+      "ShareInvestigationRequest": {
+        "properties": {
+          "ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Ra"
+          },
+          "dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Dec"
+          },
+          "target_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Name"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "title": "Fov Arcmin",
+            "default": 15.0
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector"
+          },
+          "wavelength_band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wavelength Band"
+          },
+          "selected_epoch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Epoch"
+          },
+          "selected_obs_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Obs Id"
+          },
+          "selected_cutout_fits_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Cutout Fits Url"
+          },
+          "earlier_epoch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earlier Epoch"
+          },
+          "later_epoch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Later Epoch"
+          },
+          "compared_epochs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compared Epochs"
+          },
+          "hidden_epochs": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden Epochs"
+          },
+          "early_cutout_fits_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Early Cutout Fits Url"
+          },
+          "late_cutout_fits_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Cutout Fits Url"
+          },
+          "selected_object_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Object Id"
+          },
+          "selected_object_ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Object Ra"
+          },
+          "selected_object_dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Object Dec"
+          },
+          "alignment_mode": {
+            "type": "string",
+            "enum": [
+              "fixed_sky",
+              "follow_object"
+            ],
+            "title": "Alignment Mode",
+            "default": "fixed_sky"
+          },
+          "active_view": {
+            "type": "string",
+            "title": "Active View",
+            "default": "viewer"
+          },
+          "overlays_enabled": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Overlays Enabled"
+          },
+          "playback_speed": {
+            "type": "number",
+            "title": "Playback Speed",
+            "default": 1.0
+          },
+          "loop": {
+            "type": "boolean",
+            "title": "Loop",
+            "default": true
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra",
+          "dec"
+        ],
+        "title": "ShareInvestigationRequest"
+      },
+      "SpectrumCompareRequest": {
+        "properties": {
+          "ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Ra"
+          },
+          "dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dec"
+          },
+          "epochs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Epochs"
+          },
+          "earlier_epoch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earlier Epoch"
+          },
+          "later_epoch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Later Epoch"
+          },
+          "max_exposures_per_epoch": {
+            "type": "integer",
+            "maximum": 180.0,
+            "minimum": 6.0,
+            "title": "Max Exposures Per Epoch",
+            "default": 24
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra"
+        ],
+        "title": "SpectrumCompareRequest"
+      },
+      "SpectrumCompareResponse": {
+        "properties": {
+          "ra_deg": {
+            "type": "number",
+            "title": "Ra Deg"
+          },
+          "dec_deg": {
+            "type": "number",
+            "title": "Dec Deg"
+          },
+          "flux_unit": {
+            "type": "string",
+            "title": "Flux Unit",
+            "default": "MJy/sr"
+          },
+          "point_source_flux_unit": {
+            "type": "string",
+            "title": "Point Source Flux Unit",
+            "default": "uJy"
+          },
+          "spectrum_png_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spectrum Png Url"
+          },
+          "available_epochs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Available Epochs"
+          },
+          "epoch_spectra": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Epoch Spectra"
+          },
+          "earlier_epoch": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Earlier Epoch"
+          },
+          "later_epoch": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Later Epoch"
+          },
+          "difference_spectrum_102": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Difference Spectrum 102"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra_deg",
+          "dec_deg",
+          "available_epochs",
+          "epoch_spectra",
+          "earlier_epoch",
+          "later_epoch",
+          "difference_spectrum_102"
+        ],
+        "title": "SpectrumCompareResponse"
+      },
+      "StackRequest": {
+        "properties": {
+          "cutout_fits_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "Cutout Fits Urls"
+          },
+          "ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Ra"
+          },
+          "dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dec"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 5.0,
+            "title": "Fov Arcmin",
+            "default": 15.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "cutout_fits_urls",
+          "ra"
+        ],
+        "title": "StackRequest"
+      },
+      "StackResponse": {
+        "properties": {
+          "n_stacked": {
+            "type": "integer",
+            "title": "N Stacked"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "single_exposure_png_url": {
+            "type": "string",
+            "title": "Single Exposure Png Url"
+          },
+          "stacked_png_url": {
+            "type": "string",
+            "title": "Stacked Png Url"
+          },
+          "single_background_rms_mjy_sr": {
+            "type": "number",
+            "title": "Single Background Rms Mjy Sr"
+          },
+          "stacked_background_rms_mjy_sr": {
+            "type": "number",
+            "title": "Stacked Background Rms Mjy Sr"
+          },
+          "measured_snr_improvement_factor": {
+            "type": "number",
+            "title": "Measured Snr Improvement Factor"
+          },
+          "theoretical_sqrt_n_factor": {
+            "type": "number",
+            "title": "Theoretical Sqrt N Factor"
+          },
+          "time_span_days": {
+            "type": "number",
+            "title": "Time Span Days"
+          },
+          "scientific_warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scientific Warning"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "n_stacked",
+          "detector",
+          "single_exposure_png_url",
+          "stacked_png_url",
+          "single_background_rms_mjy_sr",
+          "stacked_background_rms_mjy_sr",
+          "measured_snr_improvement_factor",
+          "theoretical_sqrt_n_factor",
+          "time_span_days",
+          "target_px"
+        ],
+        "title": "StackResponse"
+      },
+      "TimeLapseFrameMetadata": {
+        "properties": {
+          "frame_index": {
+            "type": "integer",
+            "title": "Frame Index"
+          },
+          "obs_id": {
+            "type": "string",
+            "title": "Obs Id"
+          },
+          "epoch_id": {
+            "type": "string",
+            "title": "Epoch Id"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "date_iso": {
+            "type": "string",
+            "title": "Date Iso"
+          },
+          "mjd": {
+            "type": "number",
+            "title": "Mjd"
+          },
+          "wavelength_um": {
+            "type": "number",
+            "title": "Wavelength Um"
+          },
+          "bandwidth_um": {
+            "type": "number",
+            "title": "Bandwidth Um"
+          },
+          "usable_pixel_fraction": {
+            "type": "number",
+            "title": "Usable Pixel Fraction"
+          },
+          "background_mjy_sr": {
+            "type": "number",
+            "title": "Background Mjy Sr"
+          },
+          "noise_std_mjy_sr": {
+            "type": "number",
+            "title": "Noise Std Mjy Sr"
+          },
+          "object_ra_deg": {
+            "type": "number",
+            "title": "Object Ra Deg"
+          },
+          "object_dec_deg": {
+            "type": "number",
+            "title": "Object Dec Deg"
+          },
+          "flux_mjy_sr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flux Mjy Sr"
+          },
+          "flux_ujy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flux Ujy"
+          },
+          "snr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snr"
+          },
+          "quality_flag": {
+            "type": "integer",
+            "title": "Quality Flag"
+          },
+          "flag_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flag Labels"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "cutout_fits_url": {
+            "type": "string",
+            "title": "Cutout Fits Url"
+          },
+          "frame_png_url": {
+            "type": "string",
+            "title": "Frame Png Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "frame_index",
+          "obs_id",
+          "epoch_id",
+          "detector",
+          "date_iso",
+          "mjd",
+          "wavelength_um",
+          "bandwidth_um",
+          "usable_pixel_fraction",
+          "background_mjy_sr",
+          "noise_std_mjy_sr",
+          "object_ra_deg",
+          "object_dec_deg",
+          "quality_flag",
+          "flag_labels",
+          "target_px",
+          "cutout_fits_url",
+          "frame_png_url"
+        ],
+        "title": "TimeLapseFrameMetadata"
+      },
+      "TimeLapseRequest": {
+        "properties": {
+          "ra": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Ra",
+            "description": "Right Ascension in degrees or HMS string"
+          },
+          "dec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dec",
+            "description": "Declination in degrees or DMS string"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 5.0,
+            "title": "Fov Arcmin",
+            "default": 15.0
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector",
+            "description": "'auto' or 'D1'..'D6' / '1'..'6'",
+            "default": "auto"
+          },
+          "wavelength_band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wavelength Band",
+            "default": "selected_band"
+          },
+          "alignment_mode": {
+            "type": "string",
+            "enum": [
+              "fixed_sky",
+              "follow_object"
+            ],
+            "title": "Alignment Mode",
+            "default": "fixed_sky"
+          },
+          "sampling_mode": {
+            "type": "string",
+            "enum": [
+              "epoch_best",
+              "all_compatible"
+            ],
+            "title": "Sampling Mode",
+            "default": "epoch_best"
+          },
+          "isolate_moving_object": {
+            "type": "boolean",
+            "title": "Isolate Moving Object",
+            "default": false
+          },
+          "max_frames": {
+            "type": "integer",
+            "maximum": 24.0,
+            "minimum": 2.0,
+            "title": "Max Frames",
+            "default": 8
+          },
+          "playback_speed": {
+            "type": "number",
+            "maximum": 8.0,
+            "minimum": 0.25,
+            "title": "Playback Speed",
+            "default": 1.0
+          },
+          "loop": {
+            "type": "boolean",
+            "title": "Loop",
+            "default": true
+          },
+          "target_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra"
+        ],
+        "title": "TimeLapseRequest"
+      },
+      "TimeLapseResponse": {
+        "properties": {
+          "query_ra_deg": {
+            "type": "number",
+            "title": "Query Ra Deg"
+          },
+          "query_dec_deg": {
+            "type": "number",
+            "title": "Query Dec Deg"
+          },
+          "fov_arcmin": {
+            "type": "number",
+            "title": "Fov Arcmin"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "available_detectors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Available Detectors"
+          },
+          "alignment_mode": {
+            "type": "string",
+            "title": "Alignment Mode"
+          },
+          "sampling_mode": {
+            "type": "string",
+            "title": "Sampling Mode"
+          },
+          "isolate_moving_object": {
+            "type": "boolean",
+            "title": "Isolate Moving Object"
+          },
+          "can_animate": {
+            "type": "boolean",
+            "title": "Can Animate"
+          },
+          "total_frames": {
+            "type": "integer",
+            "title": "Total Frames"
+          },
+          "epochs_covered": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Epochs Covered"
+          },
+          "ordered_dates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ordered Dates"
+          },
+          "shape_ny_nx": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Shape Ny Nx"
+          },
+          "pixel_scale_arcsec": {
+            "type": "number",
+            "title": "Pixel Scale Arcsec"
+          },
+          "orientation": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Orientation"
+          },
+          "flux_unit": {
+            "type": "string",
+            "title": "Flux Unit"
+          },
+          "display_scale": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Display Scale"
+          },
+          "angular_displacement_arcsec": {
+            "type": "number",
+            "title": "Angular Displacement Arcsec"
+          },
+          "time_baseline_days": {
+            "type": "number",
+            "title": "Time Baseline Days"
+          },
+          "frame_duration_ms": {
+            "type": "integer",
+            "title": "Frame Duration Ms"
+          },
+          "gif_url": {
+            "type": "string",
+            "title": "Gif Url"
+          },
+          "gif_download_url": {
+            "type": "string",
+            "title": "Gif Download Url"
+          },
+          "download_filename": {
+            "type": "string",
+            "title": "Download Filename"
+          },
+          "scientific_warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scientific Warning"
+          },
+          "frames": {
+            "items": {
+              "$ref": "#/components/schemas/TimeLapseFrameMetadata"
+            },
+            "type": "array",
+            "title": "Frames"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_ra_deg",
+          "query_dec_deg",
+          "fov_arcmin",
+          "detector",
+          "available_detectors",
+          "alignment_mode",
+          "sampling_mode",
+          "isolate_moving_object",
+          "can_animate",
+          "total_frames",
+          "epochs_covered",
+          "ordered_dates",
+          "shape_ny_nx",
+          "pixel_scale_arcsec",
+          "orientation",
+          "flux_unit",
+          "display_scale",
+          "angular_displacement_arcsec",
+          "time_baseline_days",
+          "frame_duration_ms",
+          "gif_url",
+          "gif_download_url",
+          "download_filename",
+          "frames"
+        ],
+        "title": "TimeLapseResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
