@@ -1,4 +1,4 @@
-"""
+﻿"""
 NASA SPHEREx Explorer ? Archive, WCS & Multi-Mission Connector (v2.4.0 Final)
 """
 
@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from astropy import log as astropy_log
 astropy_log.setLevel('ERROR')
+from astropy.utils.iers import conf as iers_conf
+iers_conf.auto_download = False
+iers_conf.auto_max_age = None
 
 import hashlib
 import json
@@ -800,3 +803,5 @@ def query_csa_neossat_cadc(coord: SkyCoord, radius_arcmin: float = 15.0) -> list
     except Exception:
         pass
     return records
+
+

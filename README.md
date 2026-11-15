@@ -1,4 +1,3 @@
-[README (3) (1).md](https://github.com/user-attachments/files/34881321/README.3.1.md)
 <div align="center">
 
 # 🌌 SPHEREx Explorer
@@ -10,7 +9,7 @@
 [![Challenge](https://img.shields.io/badge/NASA%20Space%20Apps-2026-0b3d91)](https://www.spaceappschallenge.org/)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.11x-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-18%2F19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 
 </div>
@@ -31,12 +30,13 @@ Since 2025, NASA's **SPHEREx** mission has mapped the entire sky every six month
 
 | Capability | What it does |
 | --- | --- |
-| 🔭 **Blink Comparator** | Time-lapse playback of every SPHEREx epoch covering your sky patch, grouped by ~6-month survey periods — moving objects literally pop out |
-| 🌈 **102-Band Spectra On the Fly** | Sub-pixel centroiding + forced photometry across all 6 detector arrays → a full 0.75–5.0 µm spectrum, comparable across epochs (ΔF(λ) included) |
+| 🔭 **Blink Comparator & Time-Lapse** | Time-lapse playback of every SPHEREx epoch covering your sky patch, cadence animation, and GIF export |
+| 🌈 **102-Band Spectra On the Fly** | Full 0.75–5.0 µm spectra (individual, multi-epoch comparison, and difference spectrum ΔF(λ)) |
 | ➕➖ **Difference Imaging** | Epochs reprojected onto a common WCS grid; later − earlier reveals new, moved, or vanished sources |
-| 🎯 **Object Isolation & Tracking** | Background-erased cutouts of moving sources across epochs, with angular displacement and proper-motion rate (arcsec/yr) |
-| 🗺️ **Multi-Mission Overlays** | ESA **Gaia DR3** sources *propagated to the SPHEREx observation epoch* via proper motion, NASA **AllWISE** infrared history, and CSA **NEOSSat** (CADC) — four space telescopes, one view |
-| 🔗 **Shareable Discoveries** | Every investigation state is URL-encoded — send a link, and anyone sees the exact same sky, epochs, and analysis |
+| 📦 **Variance-Weighted Stacking** | Co-addition of compatible exposures improving signal-to-noise ratio (SNR) with noise RMS metrics |
+| 🎯 **Object Isolation & Tracking** | Background-erased cutouts of moving sources across epochs, with angular displacement and proper-motion rate |
+| 🗺️ **Multi-Mission Overlays** | ESA **Gaia DR3** sources (epoch-propagated), NASA **AllWISE** infrared history, and CSA **NEOSSat** (CADC) |
+| 🔗 **Shareable Discoveries** | Every investigation state is URL-encoded (`/d/:share_id`) — restore exact coordinates, FOV, frames, and overlays |
 
 ### 🎯 The five NASA test targets, verified end-to-end
 
@@ -50,76 +50,73 @@ Since 2025, NASA's **SPHEREx** mission has mapped the entire sky every six month
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Repository Architecture
 
-```javascript
-┌───────────────────────────────────────────────────────────────┐
-│   React 19 + TypeScript + Vite frontend  (shadcn/ui, Plotly)  │
-│   Search · SkyViewer · Spectra · Difference · Track · Share   │
-└──────────────┬────────────────────────────────────────────────┘
-               │  REST/JSON — single OpenAPI contract
-┌──────────────▼───────────────────────────────────────────────┐
-│              FastAPI backend (async, cached, retrying)       │
-│  search │ identify │ spectra │ difference │ stack │ isolate  │
-│  overlays (Gaia / AllWISE / NEOSSat)                         │
-└──┬──────────┬───────────────┬───────────────┬────────────────┘
-   │ SIA2/TAP │ TAP+          │ SIA2          │ CADC VO
-┌──▼──────────▼───────────────▼───────────────▼───────────────────┐
-│ IRSA SPHEREx DR1+QR3   ESA Gaia DR3   NASA AllWISE  CSA NEOSSat │
-│ (weekly-updated)       (epoch-         (WISE       (FITS via    │
-│                        propagated)     history)    CADC)        │
-└─────────────────────────────────────────────────────────────────┘
 ```
-
-**Engineering principles:**
-
-- **Server-side cutouts only** — raw 70 MB Multi-Extension FITS files never reach the browser; the backend cuts, calibrates, and renders
-- **Zero hardcoded epochs** — collection-driven queries absorb SPHEREx's *weekly* data releases automatically
-- **One contract** — Pydantic models ⇄ TypeScript interfaces generated from a single `openapi.json`
-- **Every external call** has timeouts, exponential-backoff retries, and disk caching
+spherex-explorer/
+├── backend/                   # FastAPI Scientific Processing Engine
+│   ├── app/
+│   │   ├── main.py            # API routes (search, spectra, timelapse, overlays, share)
+│   │   ├── spherex_connector.py # NASA/IPAC IRSA archive connector, WCS, FITS handling
+│   │   └── science_engine.py  # Astrometry, aperture photometry, stacking, difference imaging
+│   ├── frontend_fixtures/     # Scientific calibration benchmarks for predefined targets
+│   ├── test_backend_e2e.py    # Complete backend integration test suite
+│   └── requirements.txt       # Python dependencies (Astropy, Astroquery, Photutils, Reproject)
+│
+├── frontend/                  # React + TypeScript + Vite Observatory Dashboard
+│   ├── src/
+│   │   ├── features/search/   # 3-column observation workspace, viewers, spectra, timelapse
+│   │   ├── api/               # React Query hooks and OpenAPI client
+│   │   └── components/        # Layout, navigation, UI primitives
+│   └── package.json           # Frontend dependencies (Plotly, Tailwind CSS v4, Lucide icons)
+│
+└── openapi.json               # Full OpenAPI 3.1 schema specification
+```
 
 ---
 
-## 🚀 Quickstart
+## 🚀 Quickstart Guide
 
-### Backend (Python 3.11+)
+### 1. Backend Setup (FastAPI)
 
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate        # Windows: .\.venv\Scripts\Activate.ps1
+
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
+
 pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 Interactive docs at **http://localhost:8000/docs** · OpenAPI schema at `/openapi.json`
 
-### Frontend (Node 20+)
+### 2. Frontend Setup (React + Vite)
 
 ```bash
+cd frontend
 npm install
-npm run dev                      # http://localhost:5173
+npm run dev
 ```
 
-Set `VITE_API_BASE_URL=http://localhost:8000` (see `.env.example`). A built-in **MSW mock layer** lets the UI run fully offline until the backend is up.
+Frontend application will be accessible at **http://localhost:5173**.
 
----
+### 3. Run Automated Tests
 
-## 🔌 API Overview (v1.2.0)
+- **Backend Integration Tests**:
+  ```bash
+  cd backend
+  python test_backend_e2e.py
+  ```
 
-| Endpoint | Description |
-| --- | --- |
-| `POST /api/search` | Query IRSA for SPHEREx epochs covering (RA, Dec), grouped for the timeline |
-| `GET /api/preview` | Download + render a pixel-accurate PNG cutout (z-scale, colormap-aware) |
-| `POST /api/objects/identify` | Mouse click → sub-pixel centroid → celestial RA/Dec + flux + S/N + exact LVF wavelength |
-| `POST /api/spectra/compare` | 102-band spectra across two epochs → Graph A (comparison) + Graph B (ΔF) |
-| `POST /api/images/difference` | WCS-aligned epoch subtraction (later − earlier) |
-| `POST /api/images/stack` | Inverse-variance weighted stacking for faint-source S/N |
-| `POST /api/objects/isolate` | Background-erased moving-source cutouts + displacement + proper motion |
-| `POST /api/overlays` | Gaia DR3 (epoch-propagated) · AllWISE · NEOSSat, projected to image pixels |
-| `GET /api/targets` · `GET /api/health` | Preset targets · health check |
-
-Coordinates accepted in **decimal degrees or sexagesimal** (`08h55m10.831s`, `-07d14m42.53s`).
+- **Frontend Unit Tests**:
+  ```bash
+  cd frontend
+  npm test
+  ```
 
 ---
 
@@ -140,8 +137,6 @@ Coordinates accepted in **decimal degrees or sexagesimal** (`08h55m10.831s`, `-0
 ## 👥 Team
 
 Built for the **NASA Space Apps Challenge 2026** — *Planet X and SPHEREx* (partner agency: Canadian Space Agency).
-
-
 
 ---
 
