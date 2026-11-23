@@ -16,6 +16,13 @@ export default function DifferenceAnalysis({
   secondFrame,
 }: Props) {
   const difference = useDifferenceImage()
+  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
+
+  const resolveUrl = (url?: string) => {
+    if (!url) return ''
+    if (url.startsWith('http://') || url.startsWith('https://')) return url
+    return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`
+  }
 
   if (!firstFrame || !secondFrame) {
     return (
@@ -108,7 +115,7 @@ export default function DifferenceAnalysis({
             </div>
             <div className="flex min-h-64 items-center justify-center p-3">
               <img
-                src={difference.data.difference_png_url}
+                src={resolveUrl(difference.data.difference_png_url)}
                 alt="Backend-generated SPHEREx difference image"
                 className="max-h-[520px] max-w-full object-contain"
                 onError={(event) => {

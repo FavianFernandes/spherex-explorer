@@ -2,7 +2,7 @@ import os
 import sys
 
 # Configure environment for Astropy and Matplotlib
-backend_dir = r"C:\Users\decic\.gemini\antigravity\scratch\spherex-backend"
+backend_dir = os.path.dirname(os.path.abspath(__file__))
 os.environ["ASTROPY_CONFIG_DIR"] = os.path.join(backend_dir, ".astropy", "config")
 os.environ["ASTROPY_CACHE_DIR"] = os.path.join(backend_dir, ".astropy", "cache")
 os.environ["MPLCONFIGDIR"] = os.path.join(backend_dir, ".matplotlib")

@@ -13,6 +13,15 @@ from pathlib import Path
 from typing import Any, Literal, Optional
 from urllib.parse import quote
 
+_base = Path(__file__).resolve().parent.parent
+(_base / ".astropy" / "config").mkdir(parents=True, exist_ok=True)
+(_base / ".astropy" / "cache").mkdir(parents=True, exist_ok=True)
+(_base / ".matplotlib").mkdir(parents=True, exist_ok=True)
+import os
+os.environ.setdefault("ASTROPY_CONFIG_DIR", str(_base / ".astropy" / "config"))
+os.environ.setdefault("ASTROPY_CACHE_DIR", str(_base / ".astropy" / "cache"))
+os.environ.setdefault("MPLCONFIGDIR", str(_base / ".matplotlib"))
+
 import astropy.units as u
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -638,6 +647,26 @@ def compare_spectra(req: SpectrumCompareRequest):
                 abs(float(fx.get("ra_deg", -999)) - coord.ra.deg) < 0.01
                 and abs(float(fx.get("dec_deg", -999)) - coord.dec.deg) < 0.01
             ):
+                # Ensure the spectrum plot PNG exists in cache
+                plot_png = fx.get("spectrum_png_url", "")
+                png_name = Path(plot_png).name if plot_png else ""
+                if png_name and not (conn.CACHE_DIR / png_name).exists():
+                    try:
+                        early_s = fx.get("earlier_epoch", {})
+                        late_s = fx.get("later_epoch", {})
+                        diff_s = fx.get("difference_spectrum_102", [])
+                        all_s = fx.get("epoch_spectra", [])
+                        out_url = sci.render_spectrum_comparison_png(
+                            float(fx.get("ra_deg", coord.ra.deg)),
+                            float(fx.get("dec_deg", coord.dec.deg)),
+                            early_s,
+                            late_s,
+                            diff_s,
+                            all_epochs=all_s,
+                        )
+                        fx["spectrum_png_url"] = out_url
+                    except Exception:
+                        pass
                 return fx
         except Exception:
             pass
@@ -745,7 +774,10 @@ def create_timelapse(req: TimeLapseRequest):
                 abs(float(fx.get("query_ra_deg", -999)) - coord.ra.deg) < 0.01
                 and abs(float(fx.get("query_dec_deg", -999)) - coord.dec.deg) < 0.01
             ):
-                return fx
+                gif_name = Path(fx.get("gif_url", "")).name
+                # Only return fixture if the GIF file actually exists in cache
+                if gif_name and (conn.CACHE_DIR / gif_name).exists():
+                    return fx
         except Exception:
             pass
 

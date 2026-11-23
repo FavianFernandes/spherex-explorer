@@ -70,6 +70,7 @@ export default function SkyViewer({
 
     let image: HTMLImageElement | null = null
     let loaded = false
+    let loadFailed = false
     let dpr = window.devicePixelRatio || 1
 
     const draw = () => {
@@ -86,7 +87,7 @@ export default function SkyViewer({
         context.font = '14px Inter, sans-serif'
         context.textAlign = 'center'
         context.fillText(
-          imageError ? 'Observation FITS preview unavailable' : 'Loading SPHEREx infrared observation...',
+          loadFailed ? 'Observation FITS preview unavailable (retrying...)' : 'Loading SPHEREx infrared observation...',
           width / 2,
           height / 2,
         )
@@ -172,14 +173,17 @@ export default function SkyViewer({
     resize()
 
     if (resolvedImageUrl) {
+      setImageError(false)
       image = new Image()
       image.onload = () => {
         loaded = true
+        loadFailed = false
         setImageError(false)
         draw()
       }
       image.onerror = () => {
         loaded = false
+        loadFailed = true
         setImageError(true)
         draw()
       }
@@ -195,7 +199,7 @@ export default function SkyViewer({
         image.onerror = null
       }
     }
-  }, [resolvedImageUrl, targetPx, imageError, overlayMarkers])
+  }, [resolvedImageUrl, targetPx, overlayMarkers])
 
   function zoomBy(factor: number) {
     view.current.zoom = Math.max(0.5, Math.min(8, view.current.zoom * factor))

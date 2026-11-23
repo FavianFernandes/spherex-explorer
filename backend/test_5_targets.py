@@ -23,7 +23,16 @@ from typing import Any
 from urllib.parse import urlparse
 
 # Ensure "from app.main import app" works when this script is run from backend/.
+import os
 BACKEND_DIR = Path(__file__).resolve().parent
+os.environ["ASTROPY_CONFIG_DIR"] = str(BACKEND_DIR / ".astropy" / "config")
+os.environ["ASTROPY_CACHE_DIR"] = str(BACKEND_DIR / ".astropy" / "cache")
+os.environ["MPLCONFIGDIR"] = str(BACKEND_DIR / ".matplotlib")
+os.environ["PYTHONPATH"] = str(BACKEND_DIR)
+(BACKEND_DIR / ".astropy" / "config").mkdir(parents=True, exist_ok=True)
+(BACKEND_DIR / ".astropy" / "cache").mkdir(parents=True, exist_ok=True)
+(BACKEND_DIR / ".matplotlib").mkdir(parents=True, exist_ok=True)
+
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 

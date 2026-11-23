@@ -44,6 +44,13 @@ export default function ExploreWorkspace() {
   const [fovSlider, setFovSlider] = useState(Number(fovParam) || 15)
   const [selectedDetector, setSelectedDetector] = useState<string>('ALL')
 
+  // Keep inputs and slider in sync with URL search params (e.g. preset targets or browser history)
+  useEffect(() => {
+    setInputRa(raParam)
+    setInputDec(decParam)
+    setFovSlider(Number(fovParam) || 15)
+  }, [raParam, decParam, fovParam])
+
   // Coordinate parsing
   const raResult = useMemo(() => parseRightAscension(inputRa), [inputRa])
   const decResult = useMemo(() => parseDeclination(inputDec), [inputDec])
@@ -77,9 +84,15 @@ export default function ExploreWorkspace() {
   // Sync tab from URL if changed
   useEffect(() => {
     if (activeTab === 'analysis') setActiveAnalysisTab('spectra')
-    else if (activeTab === 'overlays') setActiveAnalysisTab('overlays')
-    else if (activeTab === 'timelapse') setActiveAnalysisTab('timelapse')
-  }, [activeTab])
+    else if (activeTab === 'overlays') {
+      setActiveAnalysisTab('overlays')
+      setGaiaVisible(true)
+      setWiseVisible(true)
+      if (selectedFrame?.cutout_fits_url && !overlays.data && !overlays.isPending) {
+        loadOverlays()
+      }
+    } else if (activeTab === 'timelapse') setActiveAnalysisTab('timelapse')
+  }, [activeTab, selectedFrame?.cutout_fits_url])
 
   // Extract all observations and filter by detector if selected
   const allFrames = useMemo(
@@ -248,6 +261,40 @@ export default function ExploreWorkspace() {
         </div>
       </div>
 
+      {/* Main Workspace Mode Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-observatory-border/60 pb-3">
+        {[
+          { id: 'explore', label: 'Explore & Sky Viewer', icon: Compass },
+          { id: 'analysis', label: '102-Band Spectral Analysis', icon: Sparkles },
+          { id: 'timelapse', label: '6-Month Time-Lapse & GIF', icon: Calendar },
+          { id: 'overlays', label: 'Multi-Mission Overlays', icon: Sliders },
+        ].map((t) => {
+          const Icon = t.icon
+          const isCurrent =
+            activeTab === t.id ||
+            (t.id === 'explore' && (!activeTab || activeTab === 'explore')) ||
+            (t.id === 'overlays' && activeTab === 'overlays')
+          return (
+            <button
+              key={t.id}
+              onClick={() => {
+                const next = new URLSearchParams(params)
+                next.set('tab', t.id)
+                setParams(next)
+              }}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition ${
+                isCurrent
+                  ? 'border border-cyan-500/50 bg-cyan-500/15 text-cyan-300 shadow-sm shadow-cyan-500/10'
+                  : 'border border-observatory-border/60 bg-slate-900/40 text-slate-400 hover:border-observatory-border hover:text-white'
+              }`}
+            >
+              <Icon size={14} />
+              {t.label}
+            </button>
+          )
+        })}
+      </div>
+
       {/* Main 3-Column Dashboard Grid */}
       <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)_420px]">
         {/* ========================================================================= */}
@@ -309,6 +356,16 @@ export default function ExploreWorkspace() {
                   step="1"
                   value={fovSlider}
                   onChange={(e) => setFovSlider(Number(e.target.value))}
+                  onMouseUp={() => {
+                    const newParams = new URLSearchParams(params)
+                    newParams.set('fov', String(fovSlider))
+                    setParams(newParams)
+                  }}
+                  onTouchEnd={() => {
+                    const newParams = new URLSearchParams(params)
+                    newParams.set('fov', String(fovSlider))
+                    setParams(newParams)
+                  }}
                   className="mt-2 w-full accent-cyan-500 cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-observatory-muted">
@@ -400,155 +457,210 @@ export default function ExploreWorkspace() {
         </aside>
 
         {/* ========================================================================= */}
-        {/* CENTRE COLUMN: Large Central Image Viewer & Timeline */}
+        {/* CENTRE COLUMN: Large Central Image Viewer & Analysis */}
         {/* ========================================================================= */}
         <div className="space-y-5 min-w-0">
-          {/* Main Astronomical Image Viewer */}
-          {selectedFrame ? (
-            <SkyViewer
-              imageUrl={selectedFrame.preview_png_url}
-              targetPx={selectedFrame.target_px}
-              title={selectedFrame.obs_id}
-              detector={selectedFrame.detector}
-              dateObs={selectedFrame.date_iso}
-              overlayMarkers={overlayMarkers}
-              identifiedObject={identify.data}
-              onIdentify={identifyAt}
-            />
-          ) : isPending ? (
-            <div className="flex h-[460px] flex-col items-center justify-center rounded-2xl border border-observatory-border bg-[#050a16] text-observatory-cyan space-y-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
-              <p className="text-sm">Retrieving SPHEREx infrared observations…</p>
+          {activeTab === 'analysis' ? (
+            <div className="space-y-6">
+              <SPHERExSpectralGraph
+                ra={parsedRa}
+                dec={parsedDec}
+                targetName={currentTargetName}
+              />
+              <div className="rounded-2xl border border-observatory-border/80 bg-observatory-surface/60 p-4 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-observatory-muted">
+                  Spatial Reference (Observation Sky Viewer)
+                </p>
+                {selectedFrame && (
+                  <SkyViewer
+                    imageUrl={selectedFrame.preview_png_url}
+                    targetPx={selectedFrame.target_px}
+                    title={selectedFrame.obs_id}
+                    detector={selectedFrame.detector}
+                    dateObs={selectedFrame.date_iso}
+                    overlayMarkers={overlayMarkers}
+                    identifiedObject={identify.data}
+                    onIdentify={identifyAt}
+                  />
+                )}
+              </div>
+            </div>
+          ) : activeTab === 'timelapse' ? (
+            <div className="space-y-6">
+              <SPHERExTimeLapseViewer
+                ra={parsedRa}
+                dec={parsedDec}
+                fovArcmin={parsedFov}
+                targetName={currentTargetName}
+              />
+              <div className="rounded-2xl border border-observatory-border/80 bg-observatory-surface/60 p-4 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-observatory-muted">
+                  Reference Exposure Frame
+                </p>
+                {selectedFrame && (
+                  <SkyViewer
+                    imageUrl={selectedFrame.preview_png_url}
+                    targetPx={selectedFrame.target_px}
+                    title={selectedFrame.obs_id}
+                    detector={selectedFrame.detector}
+                    dateObs={selectedFrame.date_iso}
+                    overlayMarkers={overlayMarkers}
+                    identifiedObject={identify.data}
+                    onIdentify={identifyAt}
+                  />
+                )}
+              </div>
             </div>
           ) : (
-            <div className="flex h-[460px] flex-col items-center justify-center rounded-2xl border border-observatory-border bg-[#050a16] p-8 text-center text-observatory-muted">
-              <p className="text-sm">No observation frames available for this selection.</p>
-              <button
-                onClick={() => refetch()}
-                className="mt-3 rounded-lg border border-observatory-border px-4 py-2 text-xs text-cyan-300"
-              >
-                Retry Search
-              </button>
-            </div>
-          )}
-
-          {/* Observation Timeline Thumbnail Strip */}
-          <section className="rounded-2xl border border-observatory-border bg-observatory-surface/80 p-4 shadow-md space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-cyan-400" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                  Observation Timeline
-                </h3>
-              </div>
-              <span className="text-xs text-observatory-muted">
-                Showing {frames.length} frames {selectedDetector !== 'ALL' && `(Detector ${selectedDetector})`}
-              </span>
-            </div>
-
-            <div className="flex gap-2.5 overflow-x-auto pb-2 pt-1 scrollbar-thin">
-              {frames.map((frame, index) => {
-                const isSelected = frame.obs_id === selectedFrame?.obs_id
-                const isComparable = selectedFrame?.comparable_with?.includes(frame.obs_id)
-
-                return (
+            <>
+              {/* Main Astronomical Image Viewer */}
+              {selectedFrame ? (
+                <SkyViewer
+                  imageUrl={selectedFrame.preview_png_url}
+                  targetPx={selectedFrame.target_px}
+                  title={selectedFrame.obs_id}
+                  detector={selectedFrame.detector}
+                  dateObs={selectedFrame.date_iso}
+                  overlayMarkers={overlayMarkers}
+                  identifiedObject={identify.data}
+                  onIdentify={identifyAt}
+                />
+              ) : isPending ? (
+                <div className="flex h-[460px] flex-col items-center justify-center rounded-2xl border border-observatory-border bg-[#050a16] text-observatory-cyan space-y-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
+                  <p className="text-sm">Retrieving SPHEREx infrared observations…</p>
+                </div>
+              ) : (
+                <div className="flex h-[460px] flex-col items-center justify-center rounded-2xl border border-observatory-border bg-[#050a16] p-8 text-center text-observatory-muted">
+                  <p className="text-sm">No observation frames available for this selection.</p>
                   <button
-                    key={frame.obs_id}
-                    onClick={() => {
-                      identify.reset()
-                      setIdentifyError('')
-                      setSelectedId(frame.obs_id)
-                    }}
-                    className={`min-w-[130px] rounded-xl border p-2.5 text-left transition shrink-0 ${
-                      isSelected
-                        ? 'border-cyan-400 bg-cyan-500/15 shadow-md shadow-cyan-500/10'
-                        : isComparable
-                        ? 'border-violet-500/40 bg-violet-950/20 hover:border-violet-400'
-                        : 'border-observatory-border bg-[#07101e] hover:border-cyan-500/50'
-                    }`}
+                    onClick={() => refetch()}
+                    className="mt-3 rounded-lg border border-observatory-border px-4 py-2 text-xs text-cyan-300"
                   >
-                    <div className="flex items-center justify-between text-[10px] text-observatory-muted">
-                      <span>#{index + 1}</span>
-                      <span className="font-mono text-cyan-300 font-semibold">{frame.detector}</span>
-                    </div>
-                    <p className="mt-1 text-xs font-semibold text-white">
-                      {new Date(frame.date_iso).toLocaleDateString()}
-                    </p>
-                    <p className="mt-0.5 truncate font-mono text-[9px] text-slate-400">
-                      {frame.obs_id}
-                    </p>
-                    {isComparable && !isSelected && (
-                      <span className="mt-1.5 inline-block rounded bg-violet-500/20 px-1.5 py-0.5 text-[9px] text-violet-300">
-                        Comparable
-                      </span>
-                    )}
+                    Retry Search
                   </button>
-                )
-              })}
-            </div>
-          </section>
-
-          {identifyError && (
-            <div className="rounded-xl border border-red-500/40 bg-red-950/20 p-3 text-xs text-red-300">
-              {identifyError}
-            </div>
-          )}
-
-          {/* Sub-Pixel Centroiding Astrometry HUD (When Clicked) */}
-          {identify.data && (
-            <section className="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={15} className="text-cyan-400" />
-                  <h3 className="font-heading text-sm font-bold text-white">
-                    Sub-Pixel Centroided Astrometry: {identify.data.object_id}
-                  </h3>
                 </div>
-                <span className="font-mono text-xs text-cyan-300">
-                  SNR: {identify.data.snr?.toFixed(2)}
-                </span>
+              )}
+
+              {/* Observation Timeline Thumbnail Strip */}
+              <section className="rounded-2xl border border-observatory-border bg-observatory-surface/80 p-4 shadow-md space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-cyan-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                      Observation Timeline
+                    </h3>
+                  </div>
+                  <span className="text-xs text-observatory-muted">
+                    Showing {frames.length} frames {selectedDetector !== 'ALL' && `(Detector ${selectedDetector})`}
+                  </span>
+                </div>
+
+                <div className="flex gap-2.5 overflow-x-auto pb-2 pt-1 scrollbar-thin">
+                  {frames.map((frame, index) => {
+                    const isSelected = frame.obs_id === selectedFrame?.obs_id
+                    const isComparable = selectedFrame?.comparable_with?.includes(frame.obs_id)
+
+                    return (
+                      <button
+                        key={frame.obs_id}
+                        onClick={() => {
+                          identify.reset()
+                          setIdentifyError('')
+                          setSelectedId(frame.obs_id)
+                        }}
+                        className={`min-w-[130px] rounded-xl border p-2.5 text-left transition shrink-0 ${
+                          isSelected
+                            ? 'border-cyan-400 bg-cyan-500/15 shadow-md shadow-cyan-500/10'
+                            : isComparable
+                            ? 'border-violet-500/40 bg-violet-950/20 hover:border-violet-400'
+                            : 'border-observatory-border bg-[#07101e] hover:border-cyan-500/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] text-observatory-muted">
+                          <span>#{index + 1}</span>
+                          <span className="font-mono text-cyan-300 font-semibold">{frame.detector}</span>
+                        </div>
+                        <p className="mt-1 text-xs font-semibold text-white">
+                          {new Date(frame.date_iso).toLocaleDateString()}
+                        </p>
+                        <p className="mt-0.5 truncate font-mono text-[9px] text-slate-400">
+                          {frame.obs_id}
+                        </p>
+                        {isComparable && !isSelected && (
+                          <span className="mt-1.5 inline-block rounded bg-violet-500/20 px-1.5 py-0.5 text-[9px] text-violet-300">
+                            Comparable
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+
+              {identifyError && (
+                <div className="rounded-xl border border-red-500/40 bg-red-950/20 p-3 text-xs text-red-300">
+                  {identifyError}
+                </div>
+              )}
+
+              {/* Sub-Pixel Centroiding Astrometry HUD (When Clicked) */}
+              {identify.data && (
+                <section className="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 size={15} className="text-cyan-400" />
+                      <h3 className="font-heading text-sm font-bold text-white">
+                        Sub-Pixel Centroided Astrometry: {identify.data.object_id}
+                      </h3>
+                    </div>
+                    <span className="font-mono text-xs text-cyan-300">
+                      SNR: {identify.data.snr?.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+                    <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
+                      <p className="text-[10px] text-observatory-muted uppercase">RA (J2000)</p>
+                      <p className="text-cyan-300 font-semibold">{identify.data.ra_deg.toFixed(6)}°</p>
+                      <p className="text-[10px] text-slate-400">{identify.data.ra_hms}</p>
+                    </div>
+                    <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
+                      <p className="text-[10px] text-observatory-muted uppercase">Dec (J2000)</p>
+                      <p className="text-cyan-300 font-semibold">{identify.data.dec_deg.toFixed(6)}°</p>
+                      <p className="text-[10px] text-slate-400">{identify.data.dec_dms}</p>
+                    </div>
+                    <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
+                      <p className="text-[10px] text-observatory-muted uppercase">Calibrated Flux</p>
+                      <p className="text-white font-semibold">{identify.data.flux_mjy_sr?.toFixed(4)} MJy/sr</p>
+                      <p className="text-[10px] text-slate-400">± {identify.data.flux_err_mjy_sr?.toFixed(4)}</p>
+                    </div>
+                    <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
+                      <p className="text-[10px] text-observatory-muted uppercase">Bandpass / LVF</p>
+                      <p className="text-white font-semibold">{identify.data.wavelength_um?.toFixed(4)} µm</p>
+                      <p className="text-[10px] text-slate-400">Quality: {identify.data.quality_flag}</p>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Full-Width Large Analysis Section for Spectral Graphs / Time-Lapse */}
+              <div className="space-y-6 pt-2">
+                <SPHERExSpectralGraph
+                  ra={parsedRa}
+                  dec={parsedDec}
+                  targetName={currentTargetName}
+                />
+
+                <SPHERExTimeLapseViewer
+                  ra={parsedRa}
+                  dec={parsedDec}
+                  fovArcmin={parsedFov}
+                  targetName={currentTargetName}
+                />
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
-                <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
-                  <p className="text-[10px] text-observatory-muted uppercase">RA (J2000)</p>
-                  <p className="text-cyan-300 font-semibold">{identify.data.ra_deg.toFixed(6)}°</p>
-                  <p className="text-[10px] text-slate-400">{identify.data.ra_hms}</p>
-                </div>
-                <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
-                  <p className="text-[10px] text-observatory-muted uppercase">Dec (J2000)</p>
-                  <p className="text-cyan-300 font-semibold">{identify.data.dec_deg.toFixed(6)}°</p>
-                  <p className="text-[10px] text-slate-400">{identify.data.dec_dms}</p>
-                </div>
-                <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
-                  <p className="text-[10px] text-observatory-muted uppercase">Calibrated Flux</p>
-                  <p className="text-white font-semibold">{identify.data.flux_mjy_sr?.toFixed(4)} MJy/sr</p>
-                  <p className="text-[10px] text-slate-400">± {identify.data.flux_err_mjy_sr?.toFixed(4)}</p>
-                </div>
-                <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
-                  <p className="text-[10px] text-observatory-muted uppercase">Bandpass / LVF</p>
-                  <p className="text-white font-semibold">{identify.data.wavelength_um?.toFixed(4)} µm</p>
-                  <p className="text-[10px] text-slate-400">Quality: {identify.data.quality_flag}</p>
-                </div>
-              </div>
-            </section>
+            </>
           )}
-
-          {/* Full-Width Large Analysis Section for Spectral Graphs / Time-Lapse */}
-          <div className="space-y-6 pt-2">
-            <SPHERExSpectralGraph
-              ra={parsedRa}
-              dec={parsedDec}
-              targetName={currentTargetName}
-            />
-
-            <SPHERExTimeLapseViewer
-              ra={parsedRa}
-              dec={parsedDec}
-              fovArcmin={parsedFov}
-              targetName={currentTargetName}
-            />
-          </div>
         </div>
 
         {/* ========================================================================= */}

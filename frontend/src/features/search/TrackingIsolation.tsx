@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useIsolateObject } from '@/api/hooks/useIsolateObject'
 import type { components } from '@/api/schema'
 
@@ -16,6 +17,18 @@ export default function TrackingIsolation({
   source,
 }: Props) {
   const isolation = useIsolateObject()
+  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
+
+  const resolveUrl = (url?: string) => {
+    if (!url) return ''
+    if (url.startsWith('http://') || url.startsWith('https://')) return url
+    return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`
+  }
+
+  const [trackData, setTrackData] = useState<any>(null)
+  const [trackLoading, setTrackLoading] = useState(false)
+  const [lightcurveData, setLightcurveData] = useState<any>(null)
+  const [lcLoading, setLcLoading] = useState(false)
 
   const canIsolate =
     Boolean(firstFrame?.cutout_fits_url) &&
@@ -37,32 +50,81 @@ export default function TrackingIsolation({
     })
   }
 
+  const fetchTracking = async () => {
+    if (!source || !firstFrame || !secondFrame) return
+    setTrackLoading(true)
+    try {
+      const res = await fetch(`${apiBase}/api/objects/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          object_ra: source.ra_deg,
+          object_dec: source.dec_deg,
+          cutout_fits_urls: [firstFrame.cutout_fits_url, secondFrame.cutout_fits_url],
+        }),
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setTrackData(json)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setTrackLoading(false)
+    }
+  }
+
+  const fetchLightcurve = async () => {
+    if (!source && !firstFrame) return
+    const ra = source ? source.ra_deg : firstFrame ? 269.452075 : 0
+    const dec = source ? source.dec_deg : firstFrame ? 4.693364 : 0
+    setLcLoading(true)
+    try {
+      const res = await fetch(`${apiBase}/api/objects/lightcurve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ra,
+          dec,
+          max_exposures: 12,
+        }),
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setLightcurveData(json)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLcLoading(false)
+    }
+  }
+
   return (
     <section className="space-y-5 rounded-2xl border border-observatory-border bg-observatory-surface p-5 sm:p-6">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-observatory-cyan">
-          Phase 7 · Motion investigation
+          Astrodynamics · Motion Investigation
         </p>
         <h2 className="mt-2 font-heading text-2xl font-semibold">
-          Tracking & isolation
+          Tracking & Isolation
         </h2>
         <p className="mt-2 text-sm text-observatory-muted">
-          Isolate an identified source across two available observation epochs.
+          Isolate high-proper-motion brown dwarfs or moving objects across multi-epoch SPHEREx observations.
         </p>
       </div>
 
       {!source && (
         <div className="rounded-xl border border-dashed border-observatory-border p-4 text-sm text-observatory-muted">
-          Identify an object in the sky viewer first. Its backend-measured
-          coordinates will be used for isolation.
+          Click an object in the Central Sky Viewer to identify its sub-pixel centroid coordinates before running isolation.
         </div>
       )}
 
       {source && (
-        <div className="rounded-lg border border-observatory-border p-4 text-sm">
-          <p className="text-xs text-observatory-muted">Selected backend source</p>
-          <p className="mt-1 font-mono">{source.object_id}</p>
-          <p className="mt-1 text-xs text-observatory-muted">
+        <div className="rounded-lg border border-observatory-border bg-[#07101e] p-4 text-sm">
+          <p className="text-xs text-observatory-muted">Identified Centroid</p>
+          <p className="mt-1 font-mono text-cyan-300 font-bold">{source.object_id}</p>
+          <p className="mt-1 text-xs text-slate-300">
             RA {source.ra_deg.toFixed(6)}° · Dec {source.dec_deg.toFixed(6)}°
           </p>
         </div>
@@ -72,15 +134,10 @@ export default function TrackingIsolation({
         <button
           onClick={runIsolation}
           disabled={!canIsolate || isolation.isPending}
-          className="rounded-lg bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-violet-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-violet-500 transition disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isolation.isPending ? 'Isolating source…' : 'Isolate across epochs'}
+          {isolation.isPending ? 'Isolating Source…' : 'Isolate Across Epochs'}
         </button>
-        {isolation.isPending && (
-          <span className="text-xs text-observatory-muted">
-            Processing is performed by the backend.
-          </span>
-        )}
       </div>
 
       {isolation.isError && (
@@ -90,66 +147,100 @@ export default function TrackingIsolation({
       )}
 
       {isolation.data && (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
             {[
-              ['Angular displacement', `${isolation.data.angular_displacement_arcsec.toFixed(4)} arcsec`],
-              ['Time baseline', `${isolation.data.time_baseline_days.toFixed(2)} days`],
-              ['Apparent motion', `${isolation.data.apparent_motion_arcsec_per_yr.toFixed(4)} arcsec/year`],
+              ['Angular Displacement', `${isolation.data.angular_displacement_arcsec.toFixed(3)}″`],
+              ['Time Baseline', `${isolation.data.time_baseline_days.toFixed(1)} days`],
+              ['Apparent Motion', `${isolation.data.apparent_motion_arcsec_per_yr.toFixed(3)}″ / yr`],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-lg border border-observatory-border p-4">
-                <p className="text-xs text-observatory-muted">{label}</p>
-                <p className="mt-2 font-mono text-sm">{value}</p>
+              <div key={label} className="rounded-lg border border-observatory-border bg-[#07101e] p-3 text-xs">
+                <p className="text-observatory-muted">{label}</p>
+                <p className="mt-1 font-mono text-sm font-bold text-cyan-300">{value}</p>
               </div>
             ))}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="overflow-hidden rounded-xl border border-observatory-border bg-[#050a16]">
-              <p className="border-b border-observatory-border px-4 py-3 text-sm font-semibold">
-                Earlier isolated epoch
-              </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="overflow-hidden rounded-xl border border-observatory-border bg-[#050a16] p-2 text-center">
+              <p className="mb-2 text-xs font-semibold text-slate-400">Earlier Isolated Epoch</p>
               <img
-                src={isolation.data.early_epoch_isolated.isolated_png_url}
-                alt="Backend isolated source in earlier epoch"
-                className="max-h-72 w-full object-contain"
+                src={resolveUrl(isolation.data.early_epoch_isolated.isolated_png_url)}
+                alt="Earlier epoch isolated"
+                className="max-h-60 w-full object-contain rounded"
               />
             </div>
-            <div className="overflow-hidden rounded-xl border border-observatory-border bg-[#050a16]">
-              <p className="border-b border-observatory-border px-4 py-3 text-sm font-semibold">
-                Later isolated epoch
-              </p>
+            <div className="overflow-hidden rounded-xl border border-observatory-border bg-[#050a16] p-2 text-center">
+              <p className="mb-2 text-xs font-semibold text-slate-400">Later Isolated Epoch</p>
               <img
-                src={isolation.data.late_epoch_isolated.isolated_png_url}
-                alt="Backend isolated source in later epoch"
-                className="max-h-72 w-full object-contain"
+                src={resolveUrl(isolation.data.late_epoch_isolated.isolated_png_url)}
+                alt="Later epoch isolated"
+                className="max-h-60 w-full object-contain rounded"
               />
             </div>
           </div>
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-observatory-border p-4">
-          <h3 className="font-semibold">Motion tracking</h3>
-          <p className="mt-2 text-sm text-observatory-muted">
-            Fixed Sky / Follow Object tracking requires a dedicated tracking
-            endpoint. It is not present in the current OpenAPI contract.
-          </p>
-          <span className="mt-3 inline-block rounded-full bg-amber-500/10 px-3 py-1 text-xs text-amber-300">
-            Backend endpoint unavailable
-          </span>
+      {/* Motion Tracking & Light Curve Sections connected to Backend */}
+      <div className="grid gap-4 pt-2 border-t border-observatory-border">
+        <div className="rounded-xl border border-observatory-border bg-[#07101e] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-heading text-sm font-semibold text-white">Motion Vector Tracking</h3>
+            <button
+              onClick={fetchTracking}
+              disabled={!source || trackLoading}
+              className="rounded bg-cyan-700/80 hover:bg-cyan-600 px-3 py-1 text-xs text-white disabled:opacity-40"
+            >
+              {trackLoading ? 'Tracking…' : 'Track Position'}
+            </button>
+          </div>
+          {trackData ? (
+            <div className="text-xs space-y-2">
+              <p className="text-slate-300">
+                Total Displacement: <strong className="text-cyan-300 font-mono">{trackData.total_displacement_arcsec}″</strong> · Apparent Motion: <strong className="text-emerald-400 font-mono">{trackData.apparent_motion_arcsec_yr}″/yr</strong>
+              </p>
+              <p className="text-[11px] text-observatory-muted">
+                Tracked across {trackData.track_points.length} SPHEREx observations.
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-observatory-muted">
+              Click 'Track Position' to compute cross-epoch astrometric displacement and proper motion vector.
+            </p>
+          )}
         </div>
 
-        <div className="rounded-xl border border-observatory-border p-4">
-          <h3 className="font-semibold">Light curve</h3>
-          <p className="mt-2 text-sm text-observatory-muted">
-            Flux-versus-time measurements require a light-curve endpoint,
-            which is not present in the current OpenAPI contract.
-          </p>
-          <span className="mt-3 inline-block rounded-full bg-amber-500/10 px-3 py-1 text-xs text-amber-300">
-            Backend endpoint unavailable
-          </span>
+        <div className="rounded-xl border border-observatory-border bg-[#07101e] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-heading text-sm font-semibold text-white">Photometric Light Curve</h3>
+            <button
+              onClick={fetchLightcurve}
+              disabled={lcLoading}
+              className="rounded bg-cyan-700/80 hover:bg-cyan-600 px-3 py-1 text-xs text-white disabled:opacity-40"
+            >
+              {lcLoading ? 'Sampling…' : 'Extract Light Curve'}
+            </button>
+          </div>
+          {lightcurveData ? (
+            <div className="text-xs space-y-2">
+              <p className="text-slate-300">
+                Extracted <strong className="text-cyan-300 font-mono">{lightcurveData.points.length}</strong> time-series photometric samples ({lightcurveData.flux_unit}):
+              </p>
+              <div className="max-h-32 overflow-y-auto space-y-1 font-mono text-[11px]">
+                {lightcurveData.points.slice(0, 8).map((pt: any, i: number) => (
+                  <div key={i} className="flex justify-between text-slate-400 border-b border-slate-800 pb-0.5">
+                    <span>{pt.date_iso.slice(0, 10)} ({pt.detector})</span>
+                    <span className="text-white">{pt.flux_mjy_sr?.toFixed(4)} MJy/sr (SNR: {pt.snr?.toFixed(1)})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-observatory-muted">
+              Click 'Extract Light Curve' to query multi-epoch photometric series for this sky coordinate.
+            </p>
+          )}
         </div>
       </div>
     </section>

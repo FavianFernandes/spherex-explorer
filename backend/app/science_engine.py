@@ -4,6 +4,18 @@ NASA SPHEREx Explorer ? Scientific Analysis & Image Processing Engine (v2.4.0 Fi
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
+_base = Path(__file__).resolve().parent.parent
+(_base / ".astropy" / "config").mkdir(parents=True, exist_ok=True)
+(_base / ".astropy" / "cache").mkdir(parents=True, exist_ok=True)
+(_base / ".matplotlib").mkdir(parents=True, exist_ok=True)
+
+os.environ["ASTROPY_CONFIG_DIR"] = str(_base / ".astropy" / "config")
+os.environ["ASTROPY_CACHE_DIR"] = str(_base / ".astropy" / "cache")
+os.environ["MPLCONFIGDIR"] = str(_base / ".matplotlib")
+
 import concurrent.futures
 import hashlib
 import re
