@@ -2,11 +2,11 @@ import { useMutation } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import type { components } from '@/api/schema'
 
-type IdentifyRequest = components['schemas']['IdentifyRequest']
+type IdentifyObjectRequest = components['schemas']['IdentifyObjectRequest']
 
 export function useIdentifyObject() {
   return useMutation({
-    mutationFn: async (body: IdentifyRequest) => {
+    mutationFn: async (body: IdentifyObjectRequest) => {
       const { data, error, response } = await api.POST(
         '/api/objects/identify',
         { body },

@@ -1,15 +1,12 @@
 import { useMutation } from '@tanstack/react-query'
 import { api } from '@/api/client'
+import type { components } from '@/api/schema'
+
+type SpectrumCompareRequest = components['schemas']['SpectrumCompareRequest']
 
 export function useSpectrumCompare() {
   return useMutation({
-    mutationFn: async (body: {
-      ra: number
-      dec: number
-      earlier_epoch: string
-      later_epoch: string
-      max_exposures_per_epoch: number
-    }) => {
+    mutationFn: async (body: SpectrumCompareRequest) => {
       const { data, error, response } = await api.POST(
         '/api/spectra/compare',
         { body },

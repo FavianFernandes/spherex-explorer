@@ -1,5 +1,5 @@
-﻿"""
-NASA SPHEREx Explorer ? FastAPI Backend Server (v2.4.0 Final)
+"""
+NASA SPHEREx Explorer — FastAPI Backend Server (v2.4.0 Final)
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal, Optional
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 _base = Path(__file__).resolve().parent.parent
 (_base / ".astropy" / "config").mkdir(parents=True, exist_ok=True)
@@ -47,7 +47,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -75,6 +75,31 @@ def _save_shares(data: dict[str, dict[str, Any]]) -> None:
 # ============================================================================
 # PYDANTIC SCHEMAS
 # ============================================================================
+
+class QualityFlagDefinition(BaseModel):
+    bit: int
+    mask: int
+    description: str
+    unusable: bool
+
+
+class HealthResponse(BaseModel):
+    status: str
+    service: str
+    version: str
+    quality_flag_definitions: dict[str, QualityFlagDefinition]
+
+
+class PresetTarget(BaseModel):
+    id: str
+    name: str
+    category: str
+    ra: str
+    dec: str
+    ra_deg: float
+    dec_deg: float
+    description: str
+
 
 class PixelPoint(BaseModel):
     x: float
@@ -170,6 +195,62 @@ class IdentifyObjectResponse(BaseModel):
     wise_matches: Optional[list[dict[str, Any]]] = None
 
 
+class RawSpectralPoint(BaseModel):
+    obs_id: str
+    detector: str
+    date_iso: str
+    mjd: float
+    wavelength_um: float
+    bandwidth_um: float
+    flux: float
+    flux_err: float
+    flux_ujy: float
+    flux_err_ujy: float
+    snr: float
+    quality_flag: int
+    flag_labels: list[str]
+    is_usable: bool
+
+
+class NominalChannel102(BaseModel):
+    channel: int
+    detector: str
+    wavelength_um: float
+    bandwidth_um: float
+    flux: Optional[float] = None
+    flux_err: Optional[float] = None
+    flux_ujy: Optional[float] = None
+    flux_err_ujy: Optional[float] = None
+    n_exposures: int
+    directly_measured: bool = False
+    measured: bool
+
+
+class EpochSpectrumBundle(BaseModel):
+    epoch_id: str
+    observation_date: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    detectors_available: list[str] = []
+    wavelengths_um: list[float] = []
+    fluxes: list[Optional[float]] = []
+    flux_errs: list[Optional[float]] = []
+    fluxes_ujy: list[Optional[float]] = []
+    raw_points: list[RawSpectralPoint]
+    channels_102: list[NominalChannel102]
+
+
+class DifferenceChannel102(BaseModel):
+    channel: int
+    wavelength_um: float
+    delta_flux: Optional[float] = None
+    delta_flux_err: Optional[float] = None
+    delta_flux_ujy: Optional[float] = None
+    delta_flux_err_ujy: Optional[float] = None
+    significance_sigma: Optional[float] = None
+    comparable: bool
+
+
 class SpectrumCompareRequest(BaseModel):
     ra: float | str
     dec: Optional[float | str] = None
@@ -186,10 +267,10 @@ class SpectrumCompareResponse(BaseModel):
     point_source_flux_unit: str = "uJy"
     spectrum_png_url: Optional[str] = None
     available_epochs: list[str]
-    epoch_spectra: list[dict[str, Any]]
-    earlier_epoch: dict[str, Any]
-    later_epoch: dict[str, Any]
-    difference_spectrum_102: list[dict[str, Any]]
+    epoch_spectra: list[EpochSpectrumBundle]
+    earlier_epoch: EpochSpectrumBundle
+    later_epoch: EpochSpectrumBundle
+    difference_spectrum_102: list[DifferenceChannel102]
 
 
 class DifferenceRequest(BaseModel):
@@ -198,6 +279,31 @@ class DifferenceRequest(BaseModel):
     ra: float | str
     dec: Optional[float | str] = None
     fov_arcmin: float = Field(15.0, ge=5.0, le=60.0)
+
+
+class CandidateMatch(BaseModel):
+    matched: bool
+    match_type: str
+    counterpart_ra_deg: Optional[float] = None
+    counterpart_dec_deg: Optional[float] = None
+    counterpart_px: Optional[PixelPoint] = None
+    separation_arcsec: Optional[float] = None
+    apparent_motion_arcsec_yr: Optional[float] = None
+    gaia_source_id: Optional[str] = None
+    discovery_status: Optional[str] = None
+
+
+class DifferenceCandidate(BaseModel):
+    candidate_id: str
+    residual_type: Literal["positive_later_brighter", "negative_earlier_brighter"]
+    ra_deg: float
+    dec_deg: float
+    png_x: float
+    png_y: float
+    target_px: PixelPoint
+    peak_residual_mjy_sr: float
+    significance_sigma: float
+    match: CandidateMatch
 
 
 class DifferenceResponse(BaseModel):
@@ -218,7 +324,7 @@ class DifferenceResponse(BaseModel):
     display_scale: Optional[dict[str, Any]] = None
     target_px: PixelPoint
     comparable_with: list[str]
-    candidates: list[dict[str, Any]]
+    candidates: list[DifferenceCandidate]
 
 
 class StackRequest(BaseModel):
@@ -250,9 +356,17 @@ class IsolateObjectRequest(BaseModel):
     isolation_radius_pix: float = Field(4.5, ge=2.0, le=15.0)
 
 
+class IsolatedEpochFrame(BaseModel):
+    isolated_png_url: str
+    follow_object_png_url: str
+    follow_object_with_bg_png_url: str
+    target_px: PixelPoint
+    source_measurement: IdentifyObjectResponse
+
+
 class IsolateObjectResponse(BaseModel):
-    early_epoch_isolated: dict[str, Any]
-    late_epoch_isolated: dict[str, Any]
+    early_epoch_isolated: IsolatedEpochFrame
+    late_epoch_isolated: IsolatedEpochFrame
     angular_displacement_arcsec: float
     displacement_err_arcsec: float
     time_baseline_days: float
@@ -333,11 +447,60 @@ class ObjectTrackRequest(BaseModel):
     cutout_fits_urls: list[str] = Field(..., min_length=1)
 
 
+class TrackPoint(BaseModel):
+    obs_id: str
+    date_iso: str
+    mjd: float
+    detector: str
+    wavelength_um: float
+    ra_deg: float
+    dec_deg: float
+    png_x: float
+    png_y: float
+    target_px: PixelPoint
+    flux_mjy_sr: float
+    flux_ujy: float
+    snr: float
+    position_err_arcsec: float
+    is_usable: bool
+
+
+class ObjectTrackResponse(BaseModel):
+    object_id: str
+    track_points: list[TrackPoint]
+    total_displacement_arcsec: float
+    apparent_motion_arcsec_yr: float
+    motion_err_arcsec_yr: float
+
+
 class LightCurveRequest(BaseModel):
     ra: float | str
     dec: Optional[float | str] = None
     detector: Optional[str] = None
     max_exposures: int = Field(24, ge=2, le=60)
+
+
+class LightCurvePoint(BaseModel):
+    obs_id: str
+    date_iso: str
+    mjd: float
+    detector: str
+    wavelength_um: float
+    flux_mjy_sr: float
+    flux_err_mjy_sr: float
+    flux_ujy: float
+    snr: float
+    quality_flag: int
+    flag_labels: list[str]
+    is_usable: bool
+
+
+class LightCurveResponse(BaseModel):
+    object_id: str
+    ra_deg: float
+    dec_deg: float
+    flux_unit: str
+    points: list[LightCurvePoint]
 
 
 class OverlaysRequest(BaseModel):
@@ -348,6 +511,70 @@ class OverlaysRequest(BaseModel):
     include_wise_image_layer: bool = True
     north_up_aligned: bool = True
     frame_cutout_urls: Optional[dict[str, str]] = None
+
+
+class GaiaOverlaySource(BaseModel):
+    source_id: str
+    ra_deg: float
+    dec_deg: float
+    ra_at_epoch_deg: float
+    dec_at_epoch_deg: float
+    pmra_mas_yr: float
+    pmdec_mas_yr: float
+    parallax_mas: Optional[float] = None
+    g_mag: Optional[float] = None
+    bp_rp: Optional[float] = None
+    ref_epoch: float
+    png_x: float
+    png_y: float
+    target_px: PixelPoint
+    frame_px: dict[str, PixelPoint]
+
+
+class WiseOverlaySource(BaseModel):
+    designation: str
+    ra_deg: float
+    dec_deg: float
+    w1_mag: Optional[float] = None
+    w2_mag: Optional[float] = None
+    w3_mag: Optional[float] = None
+    w4_mag: Optional[float] = None
+    png_x: float
+    png_y: float
+    target_px: PixelPoint
+    frame_px: dict[str, PixelPoint]
+
+
+class CsaNeossatObservation(BaseModel):
+    observation_id: str
+    instrument: str
+    date_iso: str
+    cadc_download_url: str
+
+
+class FrameOverlayPositions(BaseModel):
+    frame_id: str
+    image_shape_ny_nx: list[int]
+    target_px: PixelPoint
+    gaia_px: dict[str, PixelPoint]
+    wise_px: dict[str, PixelPoint]
+
+
+class OverlaysResponse(BaseModel):
+    image_shape_ny_nx: list[int]
+    spherex_obs_date: str
+    orientation: dict[str, str]
+    target_px: PixelPoint
+    fov_coverage_fraction: float
+    coverage_complete: bool
+    coverage_warning: Optional[str] = None
+    catalog_warnings: list[str]
+    wise_image_png_url: Optional[str] = None
+    gaia_dr3_sources: list[GaiaOverlaySource]
+    wise_sources: list[WiseOverlaySource]
+    csa_neossat_observations: list[CsaNeossatObservation]
+    frame_overlays: dict[str, FrameOverlayPositions]
+    wiseview_url: str
 
 
 class ShareInvestigationRequest(BaseModel):
@@ -377,6 +604,13 @@ class ShareInvestigationRequest(BaseModel):
     notes: Optional[str] = None
 
 
+class ShareRecord(BaseModel):
+    share_id: str
+    share_query_string: str
+    created_at: str
+    state: ShareInvestigationRequest
+
+
 class JobCreateRequest(BaseModel):
     job_type: Literal["spectra_compare", "image_difference", "image_stack", "object_isolate", "timelapse"]
     payload: dict[str, Any]
@@ -397,7 +631,7 @@ class JobStatusResponse(BaseModel):
 # API ROUTES
 # ============================================================================
 
-@app.get("/api/health", tags=["System"])
+@app.get("/api/health", response_model=HealthResponse, tags=["System"])
 def health_check():
     return {
         "status": "ok",
@@ -407,7 +641,7 @@ def health_check():
     }
 
 
-@app.get("/api/targets", tags=["Discovery"])
+@app.get("/api/targets", response_model=list[PresetTarget], tags=["Discovery"])
 def get_sample_targets():
     return conn.SAMPLE_TARGETS
 
@@ -590,7 +824,7 @@ def lookup_object_by_id(object_id: str):
     }
 
 
-@app.post("/api/objects/track", tags=["Photometry"])
+@app.post("/api/objects/track", response_model=ObjectTrackResponse, tags=["Photometry"])
 def track_object(req: ObjectTrackRequest):
     try:
         coord = conn.parse_coordinates(req.object_ra, req.object_dec)
@@ -599,7 +833,7 @@ def track_object(req: ObjectTrackRequest):
     return sci.track_object_across_observations(coord, req.cutout_fits_urls)
 
 
-@app.post("/api/objects/lightcurve", tags=["Photometry"])
+@app.post("/api/objects/lightcurve", response_model=LightCurveResponse, tags=["Photometry"])
 def extract_lightcurve(req: LightCurveRequest):
     try:
         coord = conn.parse_coordinates(req.ra, req.dec)
@@ -647,6 +881,35 @@ def compare_spectra(req: SpectrumCompareRequest):
                 abs(float(fx.get("ra_deg", -999)) - coord.ra.deg) < 0.01
                 and abs(float(fx.get("dec_deg", -999)) - coord.dec.deg) < 0.01
             ):
+                ep_map_fx = {ep["epoch_id"]: ep for ep in fx.get("epoch_spectra", [])}
+                avail_fx = fx.get("available_epochs", [])
+                if req.epochs and any(e not in ep_map_fx for e in req.epochs):
+                    break
+                want_early = req.earlier_epoch or fx.get("earlier_epoch", {}).get("epoch_id")
+                want_late = req.later_epoch or fx.get("later_epoch", {}).get("epoch_id")
+                if want_early not in ep_map_fx or want_late not in ep_map_fx:
+                    break
+
+                if want_early != fx.get("earlier_epoch", {}).get("epoch_id") or want_late != fx.get("later_epoch", {}).get("epoch_id"):
+                    fx["earlier_epoch"] = ep_map_fx[want_early]
+                    fx["later_epoch"] = ep_map_fx[want_late]
+                    fx["difference_spectrum_102"] = sci.compute_102_difference_spectrum(
+                        fx["earlier_epoch"]["channels_102"],
+                        fx["later_epoch"]["channels_102"],
+                    )
+                    fx["spectrum_png_url"] = sci.render_spectrum_comparison_png(
+                        float(fx.get("ra_deg", coord.ra.deg)),
+                        float(fx.get("dec_deg", coord.dec.deg)),
+                        fx["earlier_epoch"],
+                        fx["later_epoch"],
+                        fx["difference_spectrum_102"],
+                        all_epochs=fx.get("epoch_spectra", []),
+                    )
+                if req.epochs:
+                    filtered_ids = [e for e in avail_fx if e in req.epochs]
+                    fx["available_epochs"] = filtered_ids
+                    fx["epoch_spectra"] = [ep_map_fx[e] for e in filtered_ids]
+
                 # Ensure the spectrum plot PNG exists in cache
                 plot_png = fx.get("spectrum_png_url", "")
                 png_name = Path(plot_png).name if plot_png else ""
@@ -767,12 +1030,23 @@ def create_timelapse(req: TimeLapseRequest):
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Invalid RA/Dec coordinates: {exc}")
 
+    req_det_raw = str(req.detector or "auto").strip().upper()
+    req_det_norm = f"D{conn.normalize_detector_id(req_det_raw)}" if req_det_raw not in ("", "AUTO", "SELECTED_BAND", "ALL") else "AUTO"
+
     for fix_file in conn.FIXTURES_DIR.glob("timelapse_*.json"):
         try:
             fx = json.loads(fix_file.read_text(encoding="utf-8"))
             if (
                 abs(float(fx.get("query_ra_deg", -999)) - coord.ra.deg) < 0.01
                 and abs(float(fx.get("query_dec_deg", -999)) - coord.dec.deg) < 0.01
+                and abs(float(fx.get("fov_arcmin", 15.0)) - req.fov_arcmin) < 0.1
+                and (req_det_norm == "AUTO" or req_det_norm == fx.get("detector"))
+                and req.alignment_mode == fx.get("alignment_mode")
+                and req.sampling_mode == fx.get("sampling_mode")
+                and req.isolate_moving_object == bool(fx.get("isolate_moving_object", False))
+                and abs(float(req.playback_speed) - 1.0) < 1e-6
+                and req.loop is True
+                and req.max_frames >= int(fx.get("total_frames", 0))
             ):
                 gif_name = Path(fx.get("gif_url", "")).name
                 # Only return fixture if the GIF file actually exists in cache
@@ -800,7 +1074,7 @@ def create_timelapse(req: TimeLapseRequest):
         raise HTTPException(status_code=500, detail=f"Time-lapse generation failed: {exc}")
 
 
-@app.post("/api/overlays", tags=["Multi-Mission"])
+@app.post("/api/overlays", response_model=OverlaysResponse, tags=["Multi-Mission"])
 def get_multi_mission_overlays(req: OverlaysRequest):
     try:
         coord = conn.parse_coordinates(req.ra, req.dec)
@@ -898,16 +1172,21 @@ def get_multi_mission_overlays(req: OverlaysRequest):
     }
 
 
-@app.post("/api/share", tags=["Discovery"])
+@app.post("/api/share", response_model=ShareRecord, tags=["Discovery"])
 def create_share_link(req: ShareInvestigationRequest):
     shares = _load_shares()
     share_id = uuid.uuid4().hex[:10]
     now_iso = datetime.now(timezone.utc).isoformat()
     state_dict = req.model_dump()
-    query_str = (
-        f"?share={share_id}&ra={req.ra}&dec={req.dec}&fov={req.fov_arcmin}"
-        f"&det={req.detector or 'auto'}&mode={req.alignment_mode}&view={req.active_view}"
-    )
+    query_str = "?" + urlencode({
+        "share": share_id,
+        "ra": str(req.ra),
+        "dec": str(req.dec),
+        "fov": str(req.fov_arcmin),
+        "det": req.detector or "auto",
+        "mode": req.alignment_mode,
+        "view": req.active_view,
+    })
     record = {
         "share_id": share_id,
         "share_query_string": query_str,
@@ -919,7 +1198,7 @@ def create_share_link(req: ShareInvestigationRequest):
     return record
 
 
-@app.get("/api/share/{share_id}", tags=["Discovery"])
+@app.get("/api/share/{share_id}", response_model=ShareRecord, tags=["Discovery"])
 def get_shared_investigation(share_id: str):
     shares = _load_shares()
     if share_id not in shares:

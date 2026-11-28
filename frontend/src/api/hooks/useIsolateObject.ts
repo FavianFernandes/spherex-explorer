@@ -2,11 +2,11 @@ import { useMutation } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import type { components } from '@/api/schema'
 
-type IsolateRequest = components['schemas']['IsolateRequest']
+type IsolateObjectRequest = components['schemas']['IsolateObjectRequest']
 
 export function useIsolateObject() {
   return useMutation({
-    mutationFn: async (body: IsolateRequest) => {
+    mutationFn: async (body: IsolateObjectRequest) => {
       const { data, error, response } = await api.POST(
         '/api/objects/isolate',
         { body },

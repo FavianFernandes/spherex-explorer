@@ -1,3 +1,4 @@
+import { resolveApiUrl } from '@/api/baseUrl'
 import { useDifferenceImage } from '@/api/hooks/useDifferenceImage'
 import type { components } from '@/api/schema'
 
@@ -5,6 +6,7 @@ type ObservationFrame = components['schemas']['ObservationFrame']
 type Props = {
   ra: number
   dec: number
+  fovArcmin?: number
   firstFrame?: ObservationFrame
   secondFrame?: ObservationFrame
 }
@@ -12,17 +14,11 @@ type Props = {
 export default function DifferenceAnalysis({
   ra,
   dec,
+  fovArcmin = 15,
   firstFrame,
   secondFrame,
 }: Props) {
   const difference = useDifferenceImage()
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
-
-  const resolveUrl = (url?: string) => {
-    if (!url) return ''
-    if (url.startsWith('http://') || url.startsWith('https://')) return url
-    return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`
-  }
 
   if (!firstFrame || !secondFrame) {
     return (
@@ -77,6 +73,7 @@ export default function DifferenceAnalysis({
           late_cutout_fits_url: later.cutout_fits_url,
           ra,
           dec,
+          fov_arcmin: fovArcmin,
         })}
         className="rounded-lg bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -115,7 +112,7 @@ export default function DifferenceAnalysis({
             </div>
             <div className="flex min-h-64 items-center justify-center p-3">
               <img
-                src={resolveUrl(difference.data.difference_png_url)}
+                src={resolveApiUrl(difference.data.difference_png_url)}
                 alt="Backend-generated SPHEREx difference image"
                 className="max-h-[520px] max-w-full object-contain"
                 onError={(event) => {

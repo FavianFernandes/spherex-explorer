@@ -2,13 +2,12 @@
 from app.spherex_connector import (
     parse_coordinates,
     search_spherex_observations,
-    download_spherex_cutout,
+    download_fits_cached,
     read_spherex_mef,
-    save_cutout_png,
+    render_fits_preview_png,
     query_gaia_dr3_cone,
     query_csa_neossat_cadc,
     build_wiseview_url,
-    CACHE_DIR,
 )
 
 
@@ -24,7 +23,7 @@ def main():
 
     print("\n2. QUERYING NASA/IPAC IRSA ARCHIVE FOR SPHEREx OBSERVATIONS...")
     obs_list = search_spherex_observations(coord, fov_arcmin=fov_arcmin)
-    print(f"   Found {len(obs_list)} real SPHEREx Level-2 spectral image observations!")
+    print(f"   Found {len(obs_list)} SPHEREx Level-2 spectral image observations!")
     if not obs_list:
         print("   No observations returned. Check your internet connection.")
         return
@@ -34,26 +33,25 @@ def main():
     print(f"   Earliest Obs: {first_obs['date_iso']} | Detector: {first_obs['detector']} | Release: {first_obs['release']}")
     print(f"   Latest Obs  : {latest_obs['date_iso']} | Detector: {latest_obs['detector']} | Release: {latest_obs['release']}")
 
-    print("\n3. DOWNLOADING REAL SPHEREx FITS CUTOUT FROM IRSA...")
-    fits_path = download_spherex_cutout(first_obs["cutout_fits_url"])
+    print("\n3. DOWNLOADING/CACHING SPHEREx FITS CUTOUT...")
+    fits_path = download_fits_cached(first_obs["cutout_fits_url"], target_coord=coord, fov_arcmin=fov_arcmin)
     print(f"   Saved FITS file to: {fits_path} ({fits_path.stat().st_size / 1024:.1f} KB)")
 
     print("\n4. READING SPHEREx MULTI-EXTENSION FITS (MEF) & WCS-WAVE...")
-    mef = read_spherex_mef(fits_path, coord)
-    for k, v in mef["metadata"].items():
-        print(f"   {k}: {v}")
+    mef = read_spherex_mef(first_obs["cutout_fits_url"], target_coord=coord, fov_arcmin=fov_arcmin)
+    for k in ("shape", "pixel_scale_arcsec", "center_wavelength_um", "center_bandwidth_um", "date_obs", "detector", "fov_coverage_fraction"):
+        print(f"   {k}: {mef[k]}")
 
-    png_path = CACHE_DIR / "verified_spherex_cutout.png"
-    save_cutout_png(mef, png_path)
+    png_path, _ = render_fits_preview_png(first_obs["cutout_fits_url"], target_coord=coord, fov_arcmin=fov_arcmin)
     print(f"\n   --> Rendered PNG cutout saved to: {png_path}")
 
     print("\n5. TESTING PARTNER RESOURCES (Gaia DR3, CSA NEOSSat/CADC, WiseView)...")
-    gaia_sources = query_gaia_dr3_cone(coord, radius_arcsec=60.0)
-    print(f"   Gaia DR3 sources within 60 arcsec: {len(gaia_sources)}")
+    gaia_sources = query_gaia_dr3_cone(coord, radius_arcmin=1.0)
+    print(f"   Gaia DR3 sources within 1.0 arcmin: {len(gaia_sources)}")
 
-    neossat_obs = query_csa_neossat_cadc(coord, radius_deg=0.5)
-    print(f"   CSA/CADC NEOSSat observations within 0.5 deg: {len(neossat_obs)}")
-    print(f"   WiseView Reference Link: {build_wiseview_url(coord, fov_arcmin)}")
+    neossat_obs = query_csa_neossat_cadc(coord, radius_arcmin=30.0)
+    print(f"   CSA/CADC NEOSSat observations within 30 arcmin: {len(neossat_obs)}")
+    print(f"   WiseView Reference Link: {build_wiseview_url(coord.ra.deg, coord.dec.deg, fov_arcmin)}")
     print("=" * 70)
 
 

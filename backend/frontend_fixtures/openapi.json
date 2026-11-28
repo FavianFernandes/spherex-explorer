@@ -18,7 +18,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
               }
             }
           }
@@ -37,7 +39,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PresetTarget"
+                  },
+                  "type": "array",
+                  "title": "Response Get Sample Targets Api Targets Get"
+                }
               }
             }
           }
@@ -432,7 +440,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectTrackResponse"
+                }
               }
             }
           },
@@ -471,7 +481,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/LightCurveResponse"
+                }
               }
             }
           },
@@ -715,7 +727,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/OverlaysResponse"
+                }
               }
             }
           },
@@ -754,7 +768,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ShareRecord"
+                }
               }
             }
           },
@@ -794,7 +810,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ShareRecord"
+                }
               }
             }
           },
@@ -939,6 +957,266 @@
   },
   "components": {
     "schemas": {
+      "CandidateMatch": {
+        "properties": {
+          "matched": {
+            "type": "boolean",
+            "title": "Matched"
+          },
+          "match_type": {
+            "type": "string",
+            "title": "Match Type"
+          },
+          "counterpart_ra_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counterpart Ra Deg"
+          },
+          "counterpart_dec_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counterpart Dec Deg"
+          },
+          "counterpart_px": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PixelPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "separation_arcsec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Separation Arcsec"
+          },
+          "apparent_motion_arcsec_yr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apparent Motion Arcsec Yr"
+          },
+          "gaia_source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gaia Source Id"
+          },
+          "discovery_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discovery Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matched",
+          "match_type"
+        ],
+        "title": "CandidateMatch"
+      },
+      "CsaNeossatObservation": {
+        "properties": {
+          "observation_id": {
+            "type": "string",
+            "title": "Observation Id"
+          },
+          "instrument": {
+            "type": "string",
+            "title": "Instrument"
+          },
+          "date_iso": {
+            "type": "string",
+            "title": "Date Iso"
+          },
+          "cadc_download_url": {
+            "type": "string",
+            "title": "Cadc Download Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "observation_id",
+          "instrument",
+          "date_iso",
+          "cadc_download_url"
+        ],
+        "title": "CsaNeossatObservation"
+      },
+      "DifferenceCandidate": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "title": "Candidate Id"
+          },
+          "residual_type": {
+            "type": "string",
+            "enum": [
+              "positive_later_brighter",
+              "negative_earlier_brighter"
+            ],
+            "title": "Residual Type"
+          },
+          "ra_deg": {
+            "type": "number",
+            "title": "Ra Deg"
+          },
+          "dec_deg": {
+            "type": "number",
+            "title": "Dec Deg"
+          },
+          "png_x": {
+            "type": "number",
+            "title": "Png X"
+          },
+          "png_y": {
+            "type": "number",
+            "title": "Png Y"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "peak_residual_mjy_sr": {
+            "type": "number",
+            "title": "Peak Residual Mjy Sr"
+          },
+          "significance_sigma": {
+            "type": "number",
+            "title": "Significance Sigma"
+          },
+          "match": {
+            "$ref": "#/components/schemas/CandidateMatch"
+          }
+        },
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "residual_type",
+          "ra_deg",
+          "dec_deg",
+          "png_x",
+          "png_y",
+          "target_px",
+          "peak_residual_mjy_sr",
+          "significance_sigma",
+          "match"
+        ],
+        "title": "DifferenceCandidate"
+      },
+      "DifferenceChannel102": {
+        "properties": {
+          "channel": {
+            "type": "integer",
+            "title": "Channel"
+          },
+          "wavelength_um": {
+            "type": "number",
+            "title": "Wavelength Um"
+          },
+          "delta_flux": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Flux"
+          },
+          "delta_flux_err": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Flux Err"
+          },
+          "delta_flux_ujy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Flux Ujy"
+          },
+          "delta_flux_err_ujy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Flux Err Ujy"
+          },
+          "significance_sigma": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Significance Sigma"
+          },
+          "comparable": {
+            "type": "boolean",
+            "title": "Comparable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel",
+          "wavelength_um",
+          "comparable"
+        ],
+        "title": "DifferenceChannel102"
+      },
       "DifferenceRequest": {
         "properties": {
           "early_cutout_fits_url": {
@@ -1092,8 +1370,7 @@
           },
           "candidates": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/DifferenceCandidate"
             },
             "type": "array",
             "title": "Candidates"
@@ -1161,6 +1438,273 @@
         ],
         "title": "EpochBucket"
       },
+      "EpochSpectrumBundle": {
+        "properties": {
+          "epoch_id": {
+            "type": "string",
+            "title": "Epoch Id"
+          },
+          "observation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation Date"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "detectors_available": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Detectors Available",
+            "default": []
+          },
+          "wavelengths_um": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Wavelengths Um",
+            "default": []
+          },
+          "fluxes": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Fluxes",
+            "default": []
+          },
+          "flux_errs": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Flux Errs",
+            "default": []
+          },
+          "fluxes_ujy": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Fluxes Ujy",
+            "default": []
+          },
+          "raw_points": {
+            "items": {
+              "$ref": "#/components/schemas/RawSpectralPoint"
+            },
+            "type": "array",
+            "title": "Raw Points"
+          },
+          "channels_102": {
+            "items": {
+              "$ref": "#/components/schemas/NominalChannel102"
+            },
+            "type": "array",
+            "title": "Channels 102"
+          }
+        },
+        "type": "object",
+        "required": [
+          "epoch_id",
+          "raw_points",
+          "channels_102"
+        ],
+        "title": "EpochSpectrumBundle"
+      },
+      "FrameOverlayPositions": {
+        "properties": {
+          "frame_id": {
+            "type": "string",
+            "title": "Frame Id"
+          },
+          "image_shape_ny_nx": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Image Shape Ny Nx"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "gaia_px": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PixelPoint"
+            },
+            "type": "object",
+            "title": "Gaia Px"
+          },
+          "wise_px": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PixelPoint"
+            },
+            "type": "object",
+            "title": "Wise Px"
+          }
+        },
+        "type": "object",
+        "required": [
+          "frame_id",
+          "image_shape_ny_nx",
+          "target_px",
+          "gaia_px",
+          "wise_px"
+        ],
+        "title": "FrameOverlayPositions"
+      },
+      "GaiaOverlaySource": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "ra_deg": {
+            "type": "number",
+            "title": "Ra Deg"
+          },
+          "dec_deg": {
+            "type": "number",
+            "title": "Dec Deg"
+          },
+          "ra_at_epoch_deg": {
+            "type": "number",
+            "title": "Ra At Epoch Deg"
+          },
+          "dec_at_epoch_deg": {
+            "type": "number",
+            "title": "Dec At Epoch Deg"
+          },
+          "pmra_mas_yr": {
+            "type": "number",
+            "title": "Pmra Mas Yr"
+          },
+          "pmdec_mas_yr": {
+            "type": "number",
+            "title": "Pmdec Mas Yr"
+          },
+          "parallax_mas": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallax Mas"
+          },
+          "g_mag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "G Mag"
+          },
+          "bp_rp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bp Rp"
+          },
+          "ref_epoch": {
+            "type": "number",
+            "title": "Ref Epoch"
+          },
+          "png_x": {
+            "type": "number",
+            "title": "Png X"
+          },
+          "png_y": {
+            "type": "number",
+            "title": "Png Y"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "frame_px": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PixelPoint"
+            },
+            "type": "object",
+            "title": "Frame Px"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "ra_deg",
+          "dec_deg",
+          "ra_at_epoch_deg",
+          "dec_at_epoch_deg",
+          "pmra_mas_yr",
+          "pmdec_mas_yr",
+          "ref_epoch",
+          "png_x",
+          "png_y",
+          "target_px",
+          "frame_px"
+        ],
+        "title": "GaiaOverlaySource"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1173,6 +1717,37 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "quality_flag_definitions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/QualityFlagDefinition"
+            },
+            "type": "object",
+            "title": "Quality Flag Definitions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "version",
+          "quality_flag_definitions"
+        ],
+        "title": "HealthResponse"
       },
       "IdentifyObjectRequest": {
         "properties": {
@@ -1455,14 +2030,10 @@
       "IsolateObjectResponse": {
         "properties": {
           "early_epoch_isolated": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Early Epoch Isolated"
+            "$ref": "#/components/schemas/IsolatedEpochFrame"
           },
           "late_epoch_isolated": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Late Epoch Isolated"
+            "$ref": "#/components/schemas/IsolatedEpochFrame"
           },
           "angular_displacement_arcsec": {
             "type": "number",
@@ -1496,6 +2067,37 @@
           "motion_err_arcsec_per_yr"
         ],
         "title": "IsolateObjectResponse"
+      },
+      "IsolatedEpochFrame": {
+        "properties": {
+          "isolated_png_url": {
+            "type": "string",
+            "title": "Isolated Png Url"
+          },
+          "follow_object_png_url": {
+            "type": "string",
+            "title": "Follow Object Png Url"
+          },
+          "follow_object_with_bg_png_url": {
+            "type": "string",
+            "title": "Follow Object With Bg Png Url"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "source_measurement": {
+            "$ref": "#/components/schemas/IdentifyObjectResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "isolated_png_url",
+          "follow_object_png_url",
+          "follow_object_with_bg_png_url",
+          "target_px",
+          "source_measurement"
+        ],
+        "title": "IsolatedEpochFrame"
       },
       "JobCreateRequest": {
         "properties": {
@@ -1588,6 +2190,77 @@
         ],
         "title": "JobStatusResponse"
       },
+      "LightCurvePoint": {
+        "properties": {
+          "obs_id": {
+            "type": "string",
+            "title": "Obs Id"
+          },
+          "date_iso": {
+            "type": "string",
+            "title": "Date Iso"
+          },
+          "mjd": {
+            "type": "number",
+            "title": "Mjd"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "wavelength_um": {
+            "type": "number",
+            "title": "Wavelength Um"
+          },
+          "flux_mjy_sr": {
+            "type": "number",
+            "title": "Flux Mjy Sr"
+          },
+          "flux_err_mjy_sr": {
+            "type": "number",
+            "title": "Flux Err Mjy Sr"
+          },
+          "flux_ujy": {
+            "type": "number",
+            "title": "Flux Ujy"
+          },
+          "snr": {
+            "type": "number",
+            "title": "Snr"
+          },
+          "quality_flag": {
+            "type": "integer",
+            "title": "Quality Flag"
+          },
+          "flag_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flag Labels"
+          },
+          "is_usable": {
+            "type": "boolean",
+            "title": "Is Usable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "obs_id",
+          "date_iso",
+          "mjd",
+          "detector",
+          "wavelength_um",
+          "flux_mjy_sr",
+          "flux_err_mjy_sr",
+          "flux_ujy",
+          "snr",
+          "quality_flag",
+          "flag_labels",
+          "is_usable"
+        ],
+        "title": "LightCurvePoint"
+      },
       "LightCurveRequest": {
         "properties": {
           "ra": {
@@ -1640,6 +2313,129 @@
         ],
         "title": "LightCurveRequest"
       },
+      "LightCurveResponse": {
+        "properties": {
+          "object_id": {
+            "type": "string",
+            "title": "Object Id"
+          },
+          "ra_deg": {
+            "type": "number",
+            "title": "Ra Deg"
+          },
+          "dec_deg": {
+            "type": "number",
+            "title": "Dec Deg"
+          },
+          "flux_unit": {
+            "type": "string",
+            "title": "Flux Unit"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/LightCurvePoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "object_id",
+          "ra_deg",
+          "dec_deg",
+          "flux_unit",
+          "points"
+        ],
+        "title": "LightCurveResponse"
+      },
+      "NominalChannel102": {
+        "properties": {
+          "channel": {
+            "type": "integer",
+            "title": "Channel"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "wavelength_um": {
+            "type": "number",
+            "title": "Wavelength Um"
+          },
+          "bandwidth_um": {
+            "type": "number",
+            "title": "Bandwidth Um"
+          },
+          "flux": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flux"
+          },
+          "flux_err": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flux Err"
+          },
+          "flux_ujy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flux Ujy"
+          },
+          "flux_err_ujy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flux Err Ujy"
+          },
+          "n_exposures": {
+            "type": "integer",
+            "title": "N Exposures"
+          },
+          "directly_measured": {
+            "type": "boolean",
+            "title": "Directly Measured",
+            "default": false
+          },
+          "measured": {
+            "type": "boolean",
+            "title": "Measured"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel",
+          "detector",
+          "wavelength_um",
+          "bandwidth_um",
+          "n_exposures",
+          "measured"
+        ],
+        "title": "NominalChannel102"
+      },
       "ObjectTrackRequest": {
         "properties": {
           "object_ra": {
@@ -1682,6 +2478,42 @@
           "cutout_fits_urls"
         ],
         "title": "ObjectTrackRequest"
+      },
+      "ObjectTrackResponse": {
+        "properties": {
+          "object_id": {
+            "type": "string",
+            "title": "Object Id"
+          },
+          "track_points": {
+            "items": {
+              "$ref": "#/components/schemas/TrackPoint"
+            },
+            "type": "array",
+            "title": "Track Points"
+          },
+          "total_displacement_arcsec": {
+            "type": "number",
+            "title": "Total Displacement Arcsec"
+          },
+          "apparent_motion_arcsec_yr": {
+            "type": "number",
+            "title": "Apparent Motion Arcsec Yr"
+          },
+          "motion_err_arcsec_yr": {
+            "type": "number",
+            "title": "Motion Err Arcsec Yr"
+          }
+        },
+        "type": "object",
+        "required": [
+          "object_id",
+          "track_points",
+          "total_displacement_arcsec",
+          "apparent_motion_arcsec_yr",
+          "motion_err_arcsec_yr"
+        ],
+        "title": "ObjectTrackResponse"
       },
       "ObservationFrame": {
         "properties": {
@@ -1857,6 +2689,116 @@
         ],
         "title": "OverlaysRequest"
       },
+      "OverlaysResponse": {
+        "properties": {
+          "image_shape_ny_nx": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Image Shape Ny Nx"
+          },
+          "spherex_obs_date": {
+            "type": "string",
+            "title": "Spherex Obs Date"
+          },
+          "orientation": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Orientation"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "fov_coverage_fraction": {
+            "type": "number",
+            "title": "Fov Coverage Fraction"
+          },
+          "coverage_complete": {
+            "type": "boolean",
+            "title": "Coverage Complete"
+          },
+          "coverage_warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Warning"
+          },
+          "catalog_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Catalog Warnings"
+          },
+          "wise_image_png_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wise Image Png Url"
+          },
+          "gaia_dr3_sources": {
+            "items": {
+              "$ref": "#/components/schemas/GaiaOverlaySource"
+            },
+            "type": "array",
+            "title": "Gaia Dr3 Sources"
+          },
+          "wise_sources": {
+            "items": {
+              "$ref": "#/components/schemas/WiseOverlaySource"
+            },
+            "type": "array",
+            "title": "Wise Sources"
+          },
+          "csa_neossat_observations": {
+            "items": {
+              "$ref": "#/components/schemas/CsaNeossatObservation"
+            },
+            "type": "array",
+            "title": "Csa Neossat Observations"
+          },
+          "frame_overlays": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FrameOverlayPositions"
+            },
+            "type": "object",
+            "title": "Frame Overlays"
+          },
+          "wiseview_url": {
+            "type": "string",
+            "title": "Wiseview Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "image_shape_ny_nx",
+          "spherex_obs_date",
+          "orientation",
+          "target_px",
+          "fov_coverage_fraction",
+          "coverage_complete",
+          "catalog_warnings",
+          "gaia_dr3_sources",
+          "wise_sources",
+          "csa_neossat_observations",
+          "frame_overlays",
+          "wiseview_url"
+        ],
+        "title": "OverlaysResponse"
+      },
       "PixelPoint": {
         "properties": {
           "x": {
@@ -1874,6 +2816,163 @@
           "y"
         ],
         "title": "PixelPoint"
+      },
+      "PresetTarget": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "ra": {
+            "type": "string",
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "string",
+            "title": "Dec"
+          },
+          "ra_deg": {
+            "type": "number",
+            "title": "Ra Deg"
+          },
+          "dec_deg": {
+            "type": "number",
+            "title": "Dec Deg"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "ra",
+          "dec",
+          "ra_deg",
+          "dec_deg",
+          "description"
+        ],
+        "title": "PresetTarget"
+      },
+      "QualityFlagDefinition": {
+        "properties": {
+          "bit": {
+            "type": "integer",
+            "title": "Bit"
+          },
+          "mask": {
+            "type": "integer",
+            "title": "Mask"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "unusable": {
+            "type": "boolean",
+            "title": "Unusable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bit",
+          "mask",
+          "description",
+          "unusable"
+        ],
+        "title": "QualityFlagDefinition"
+      },
+      "RawSpectralPoint": {
+        "properties": {
+          "obs_id": {
+            "type": "string",
+            "title": "Obs Id"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "date_iso": {
+            "type": "string",
+            "title": "Date Iso"
+          },
+          "mjd": {
+            "type": "number",
+            "title": "Mjd"
+          },
+          "wavelength_um": {
+            "type": "number",
+            "title": "Wavelength Um"
+          },
+          "bandwidth_um": {
+            "type": "number",
+            "title": "Bandwidth Um"
+          },
+          "flux": {
+            "type": "number",
+            "title": "Flux"
+          },
+          "flux_err": {
+            "type": "number",
+            "title": "Flux Err"
+          },
+          "flux_ujy": {
+            "type": "number",
+            "title": "Flux Ujy"
+          },
+          "flux_err_ujy": {
+            "type": "number",
+            "title": "Flux Err Ujy"
+          },
+          "snr": {
+            "type": "number",
+            "title": "Snr"
+          },
+          "quality_flag": {
+            "type": "integer",
+            "title": "Quality Flag"
+          },
+          "flag_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flag Labels"
+          },
+          "is_usable": {
+            "type": "boolean",
+            "title": "Is Usable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "obs_id",
+          "detector",
+          "date_iso",
+          "mjd",
+          "wavelength_um",
+          "bandwidth_um",
+          "flux",
+          "flux_err",
+          "flux_ujy",
+          "flux_err_ujy",
+          "snr",
+          "quality_flag",
+          "flag_labels",
+          "is_usable"
+        ],
+        "title": "RawSpectralPoint"
       },
       "SearchRequest": {
         "properties": {
@@ -2255,6 +3354,33 @@
         ],
         "title": "ShareInvestigationRequest"
       },
+      "ShareRecord": {
+        "properties": {
+          "share_id": {
+            "type": "string",
+            "title": "Share Id"
+          },
+          "share_query_string": {
+            "type": "string",
+            "title": "Share Query String"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ShareInvestigationRequest"
+          }
+        },
+        "type": "object",
+        "required": [
+          "share_id",
+          "share_query_string",
+          "created_at",
+          "state"
+        ],
+        "title": "ShareRecord"
+      },
       "SpectrumCompareRequest": {
         "properties": {
           "ra": {
@@ -2372,26 +3498,20 @@
           },
           "epoch_spectra": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/EpochSpectrumBundle"
             },
             "type": "array",
             "title": "Epoch Spectra"
           },
           "earlier_epoch": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Earlier Epoch"
+            "$ref": "#/components/schemas/EpochSpectrumBundle"
           },
           "later_epoch": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Later Epoch"
+            "$ref": "#/components/schemas/EpochSpectrumBundle"
           },
           "difference_spectrum_102": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/DifferenceChannel102"
             },
             "type": "array",
             "title": "Difference Spectrum 102"
@@ -2939,6 +4059,88 @@
         ],
         "title": "TimeLapseResponse"
       },
+      "TrackPoint": {
+        "properties": {
+          "obs_id": {
+            "type": "string",
+            "title": "Obs Id"
+          },
+          "date_iso": {
+            "type": "string",
+            "title": "Date Iso"
+          },
+          "mjd": {
+            "type": "number",
+            "title": "Mjd"
+          },
+          "detector": {
+            "type": "string",
+            "title": "Detector"
+          },
+          "wavelength_um": {
+            "type": "number",
+            "title": "Wavelength Um"
+          },
+          "ra_deg": {
+            "type": "number",
+            "title": "Ra Deg"
+          },
+          "dec_deg": {
+            "type": "number",
+            "title": "Dec Deg"
+          },
+          "png_x": {
+            "type": "number",
+            "title": "Png X"
+          },
+          "png_y": {
+            "type": "number",
+            "title": "Png Y"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "flux_mjy_sr": {
+            "type": "number",
+            "title": "Flux Mjy Sr"
+          },
+          "flux_ujy": {
+            "type": "number",
+            "title": "Flux Ujy"
+          },
+          "snr": {
+            "type": "number",
+            "title": "Snr"
+          },
+          "position_err_arcsec": {
+            "type": "number",
+            "title": "Position Err Arcsec"
+          },
+          "is_usable": {
+            "type": "boolean",
+            "title": "Is Usable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "obs_id",
+          "date_iso",
+          "mjd",
+          "detector",
+          "wavelength_um",
+          "ra_deg",
+          "dec_deg",
+          "png_x",
+          "png_y",
+          "target_px",
+          "flux_mjy_sr",
+          "flux_ujy",
+          "snr",
+          "position_err_arcsec",
+          "is_usable"
+        ],
+        "title": "TrackPoint"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -2978,6 +4180,95 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WiseOverlaySource": {
+        "properties": {
+          "designation": {
+            "type": "string",
+            "title": "Designation"
+          },
+          "ra_deg": {
+            "type": "number",
+            "title": "Ra Deg"
+          },
+          "dec_deg": {
+            "type": "number",
+            "title": "Dec Deg"
+          },
+          "w1_mag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "W1 Mag"
+          },
+          "w2_mag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "W2 Mag"
+          },
+          "w3_mag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "W3 Mag"
+          },
+          "w4_mag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "W4 Mag"
+          },
+          "png_x": {
+            "type": "number",
+            "title": "Png X"
+          },
+          "png_y": {
+            "type": "number",
+            "title": "Png Y"
+          },
+          "target_px": {
+            "$ref": "#/components/schemas/PixelPoint"
+          },
+          "frame_px": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PixelPoint"
+            },
+            "type": "object",
+            "title": "Frame Px"
+          }
+        },
+        "type": "object",
+        "required": [
+          "designation",
+          "ra_deg",
+          "dec_deg",
+          "png_x",
+          "png_y",
+          "target_px",
+          "frame_px"
+        ],
+        "title": "WiseOverlaySource"
       }
     }
   }

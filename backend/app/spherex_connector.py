@@ -1,5 +1,5 @@
-﻿"""
-NASA SPHEREx Explorer ? Archive, WCS & Multi-Mission Connector (v2.4.0 Final)
+"""
+NASA SPHEREx Explorer — Archive, WCS & Multi-Mission Connector (v2.4.0 Final)
 """
 
 from __future__ import annotations
@@ -487,11 +487,12 @@ def generate_synthetic_spherex_fits(
     pm_x = 0.0
     pm_y = 0.0
     if abs(ra_deg - 269.452) < 0.05 and abs(dec_deg - 4.693) < 0.05:
-        pm_x = (-0.798 * dt_yr) / pixel_scale_arcsec
+        # cdelt[0] is negative (East left), so negative pmRA moves +x (West)
+        pm_x = (0.798 * dt_yr) / pixel_scale_arcsec
         pm_y = (10.3 * dt_yr) / pixel_scale_arcsec
         peak = 4.2
     elif abs(ra_deg - 133.795) < 0.05 and abs(dec_deg + 7.245) < 0.05:
-        pm_x = (-8.1 * dt_yr) / pixel_scale_arcsec
+        pm_x = (8.1 * dt_yr) / pixel_scale_arcsec
         peak = 2.8 if det_str in ("5", "6") else 0.4
     else:
         peak = 3.5
@@ -747,12 +748,52 @@ def build_wiseview_url(ra_deg: float, dec_deg: float, fov_arcmin: float = 15.0) 
     )
 
 
+def _parse_obs_time(obs_date_iso: str | None) -> Time:
+    if not obs_date_iso:
+        return Time("2025-05-08T00:00:00")
+    try:
+        return Time(obs_date_iso)
+    except Exception:
+        return Time("2025-05-08T00:00:00")
+
+
+def _propagate_gaia_rows(rows: list[dict[str, Any]], obs_date_iso: str | None) -> list[dict[str, Any]]:
+    obs_time = _parse_obs_time(obs_date_iso)
+    sources: list[dict[str, Any]] = []
+    for r in rows:
+        ra0 = float(r["ra_deg"])
+        dec0 = float(r["dec_deg"])
+        pmra = float(r["pmra_mas_yr"])
+        pmdec = float(r["pmdec_mas_yr"])
+        ref_ep = float(r["ref_epoch"])
+        dt_yr = float(obs_time.jyear - ref_ep)
+        cos_dec = max(0.05, float(np.cos(np.deg2rad(dec0))))
+        ra_ep = ra0 + (pmra / 3600000.0 / cos_dec) * dt_yr
+        dec_ep = dec0 + (pmdec / 3600000.0) * dt_yr
+        sources.append({
+            **r,
+            "ra_at_epoch_deg": round(ra_ep, 6),
+            "dec_at_epoch_deg": round(dec_ep, 6),
+        })
+    return sources
+
+
 def query_gaia_dr3_cone(
     coord: SkyCoord,
     radius_arcmin: float = 7.5,
     obs_date_iso: str | None = None,
 ) -> list[dict[str, Any]]:
     rad_deg = max(0.02, min(radius_arcmin / 60.0, 0.5))
+    cache_key = hashlib.sha256(f"gaia_{coord.ra.deg:.4f}_{coord.dec.deg:.4f}_{rad_deg:.4f}".encode()).hexdigest()[:16]
+    cache_file = CACHE_DIR / f"gaia_cone_{cache_key}.json"
+    if cache_file.exists():
+        try:
+            cached_rows = json.loads(cache_file.read_text(encoding="utf-8"))
+            if isinstance(cached_rows, list) and cached_rows:
+                return _propagate_gaia_rows(cached_rows, obs_date_iso)
+        except Exception:
+            pass
+
     adql = f"""
     SELECT TOP 80
         source_id, ra, dec, pmra, pmdec, parallax, phot_g_mean_mag, bp_rp, ref_epoch
@@ -760,65 +801,60 @@ def query_gaia_dr3_cone(
     WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {coord.ra.deg:.6f}, {coord.dec.deg:.6f}, {rad_deg:.4f}))
     ORDER BY phot_g_mean_mag ASC
     """
-    sources: list[dict[str, Any]] = []
+    raw_rows: list[dict[str, Any]] = []
     try:
         tbl = Irsa.query_tap(adql).to_table()
-        obs_time = Time(obs_date_iso) if obs_date_iso else Time("2025-05-08T00:00:00")
         for row in tbl:
             ra0 = _safe_float(row["ra"], np.nan)
             dec0 = _safe_float(row["dec"], np.nan)
             if not (np.isfinite(ra0) and np.isfinite(dec0)):
                 continue
-            pmra = _safe_float(row["pmra"], 0.0)
-            pmdec = _safe_float(row["pmdec"], 0.0)
-            plx = _safe_float(row["parallax"], 0.0)
-            ref_ep = _safe_float(row["ref_epoch"], 2016.0)
-
-            dt_yr = float(obs_time.jyear - ref_ep)
-            cos_dec = max(0.05, float(np.cos(np.deg2rad(dec0))))
-            ra_ep = ra0 + (pmra / 3600000.0 / cos_dec) * dt_yr
-            dec_ep = dec0 + (pmdec / 3600000.0) * dt_yr
-
-            sources.append({
+            raw_rows.append({
                 "source_id": _safe_str(row["source_id"], ""),
                 "ra_deg": round(ra0, 6),
                 "dec_deg": round(dec0, 6),
-                "ra_at_epoch_deg": round(ra_ep, 6),
-                "dec_at_epoch_deg": round(dec_ep, 6),
-                "pmra_mas_yr": round(pmra, 3),
-                "pmdec_mas_yr": round(pmdec, 3),
-                "parallax_mas": round(plx, 3),
+                "pmra_mas_yr": round(_safe_float(row["pmra"], 0.0), 3),
+                "pmdec_mas_yr": round(_safe_float(row["pmdec"], 0.0), 3),
+                "parallax_mas": round(_safe_float(row["parallax"], 0.0), 3),
                 "g_mag": round(_safe_float(row["phot_g_mean_mag"], 99.0), 3),
                 "bp_rp": round(_safe_float(row["bp_rp"], 0.0), 3),
-                "ref_epoch": ref_ep,
+                "ref_epoch": _safe_float(row["ref_epoch"], 2016.0),
             })
+        if raw_rows:
+            try:
+                cache_file.write_text(json.dumps(raw_rows), encoding="utf-8")
+            except Exception:
+                pass
     except Exception:
         pass
 
-    if not sources:
-        # Fallback: synthesize realistic reproducible Gaia DR3 catalog sources for this field
-        rng = np.random.default_rng(int(hashlib.md5(f"gaia_{coord.ra.deg:.4f}_{coord.dec.deg:.4f}".encode()).hexdigest()[:8], 16))
-        n_src = int(rng.integers(8, 16))
-        for _ in range(n_src):
-            dra = float(rng.uniform(-rad_deg * 0.8, rad_deg * 0.8))
-            ddec = float(rng.uniform(-rad_deg * 0.8, rad_deg * 0.8))
-            s_ra = coord.ra.deg + dra
-            s_dec = coord.dec.deg + ddec
-            pmra = float(rng.normal(0, 18.0))
-            pmdec = float(rng.normal(0, 18.0))
-            sources.append({
-                "source_id": f"GAIA-DR3-{int(rng.integers(100000000, 999999999))}",
-                "ra_deg": round(s_ra, 6),
-                "dec_deg": round(s_dec, 6),
-                "ra_at_epoch_deg": round(s_ra + (pmra / 3.6e6) * 0.09, 6),
-                "dec_at_epoch_deg": round(s_dec + (pmdec / 3.6e6) * 0.09, 6),
-                "pmra_mas_yr": round(pmra, 2),
-                "pmdec_mas_yr": round(pmdec, 2),
-                "parallax_mas": round(float(rng.uniform(0.5, 12.0)), 3),
-                "g_mag": round(float(rng.uniform(11.0, 18.5)), 2),
-                "bp_rp": round(float(rng.uniform(0.4, 2.2)), 2),
-                "ref_epoch": 2016.0,
-            })
+    if raw_rows:
+        return _propagate_gaia_rows(raw_rows, obs_date_iso)
+
+    # Fallback: synthesize realistic reproducible Gaia DR3 catalog sources for this field
+    sources: list[dict[str, Any]] = []
+    rng = np.random.default_rng(int(hashlib.md5(f"gaia_{coord.ra.deg:.4f}_{coord.dec.deg:.4f}".encode()).hexdigest()[:8], 16))
+    n_src = int(rng.integers(8, 16))
+    for _ in range(n_src):
+        dra = float(rng.uniform(-rad_deg * 0.8, rad_deg * 0.8))
+        ddec = float(rng.uniform(-rad_deg * 0.8, rad_deg * 0.8))
+        s_ra = coord.ra.deg + dra
+        s_dec = coord.dec.deg + ddec
+        pmra = float(rng.normal(0, 18.0))
+        pmdec = float(rng.normal(0, 18.0))
+        sources.append({
+            "source_id": f"GAIA-DR3-{int(rng.integers(100000000, 999999999))}",
+            "ra_deg": round(s_ra, 6),
+            "dec_deg": round(s_dec, 6),
+            "ra_at_epoch_deg": round(s_ra + (pmra / 3.6e6) * 0.09, 6),
+            "dec_at_epoch_deg": round(s_dec + (pmdec / 3.6e6) * 0.09, 6),
+            "pmra_mas_yr": round(pmra, 2),
+            "pmdec_mas_yr": round(pmdec, 2),
+            "parallax_mas": round(float(rng.uniform(0.5, 12.0)), 3),
+            "g_mag": round(float(rng.uniform(11.0, 18.5)), 2),
+            "bp_rp": round(float(rng.uniform(0.4, 2.2)), 2),
+            "ref_epoch": 2016.0,
+        })
     return sources
 
 
@@ -826,8 +862,13 @@ def crossmatch_coord_with_gaia_dr3(
     coord: SkyCoord,
     obs_date_iso: str | None = None,
     match_radius_arcsec: float = 6.5,
+    preloaded_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    gaia_list = query_gaia_dr3_cone(coord, radius_arcmin=1.5, obs_date_iso=obs_date_iso)
+    gaia_list = (
+        preloaded_sources
+        if preloaded_sources is not None
+        else query_gaia_dr3_cone(coord, radius_arcmin=1.5, obs_date_iso=obs_date_iso)
+    )
     best_src = None
     best_sep = 999.0
     for g in gaia_list:
@@ -862,6 +903,16 @@ def crossmatch_coord_with_gaia_dr3(
 
 def query_wise_catalog(coord: SkyCoord, radius_arcmin: float = 7.5) -> list[dict[str, Any]]:
     rad_deg = max(0.02, min(radius_arcmin / 60.0, 0.5))
+    cache_key = hashlib.sha256(f"wise_{coord.ra.deg:.4f}_{coord.dec.deg:.4f}_{rad_deg:.4f}".encode()).hexdigest()[:16]
+    cache_file = CACHE_DIR / f"wise_cone_{cache_key}.json"
+    if cache_file.exists():
+        try:
+            cached = json.loads(cache_file.read_text(encoding="utf-8"))
+            if isinstance(cached, list) and cached:
+                return cached
+        except Exception:
+            pass
+
     adql = f"""
     SELECT TOP 60
         designation, ra, dec, w1mpro, w2mpro, w3mpro, w4mpro
@@ -886,6 +937,11 @@ def query_wise_catalog(coord: SkyCoord, radius_arcmin: float = 7.5) -> list[dict
                 "w3_mag": round(_safe_float(row["w3mpro"], 99.0), 3),
                 "w4_mag": round(_safe_float(row["w4mpro"], 99.0), 3),
             })
+        if sources:
+            try:
+                cache_file.write_text(json.dumps(sources), encoding="utf-8")
+            except Exception:
+                pass
     except Exception:
         pass
 
@@ -963,6 +1019,16 @@ def render_wise_aligned_layer(
 
 def query_csa_neossat_cadc(coord: SkyCoord, radius_arcmin: float = 15.0) -> list[dict[str, Any]]:
     rad_deg = max(0.05, min(radius_arcmin / 60.0, 1.0))
+    cache_key = hashlib.sha256(f"neossat_{coord.ra.deg:.4f}_{coord.dec.deg:.4f}_{rad_deg:.4f}".encode()).hexdigest()[:16]
+    cache_file = CACHE_DIR / f"neossat_{cache_key}.json"
+    if cache_file.exists():
+        try:
+            cached = json.loads(cache_file.read_text(encoding="utf-8"))
+            if isinstance(cached, list) and cached:
+                return cached
+        except Exception:
+            pass
+
     adql = f"""
     SELECT TOP 15
         observationID, instrument_name, time_bounds_lower
@@ -990,6 +1056,11 @@ def query_csa_neossat_cadc(coord: SkyCoord, radius_arcmin: float = 15.0) -> list
                             "date_iso": Time(mjd, format="mjd").isot,
                             "cadc_download_url": f"https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/search/?Observation.observationID={obs_id}&Plane.dataProductType=image",
                         })
+        if records:
+            try:
+                cache_file.write_text(json.dumps(records), encoding="utf-8")
+            except Exception:
+                pass
     except Exception:
         pass
 

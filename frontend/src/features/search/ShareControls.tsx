@@ -1,25 +1,30 @@
 import { useState } from 'react'
 import { Share2, Check, ExternalLink } from 'lucide-react'
+import { API_BASE_URL } from '@/api/baseUrl'
 
 type Props = {
   ra?: number | string
   dec?: number | string
+  targetName?: string
   fovArcmin?: number
   detector?: string
   selectedObsId?: string
   earlierEpoch?: string
   laterEpoch?: string
+  activeView?: string
   overlaysEnabled?: string[]
 }
 
 export default function ShareControls({
   ra,
   dec,
+  targetName,
   fovArcmin = 15,
   detector,
   selectedObsId,
   earlierEpoch,
   laterEpoch,
+  activeView = 'viewer',
   overlaysEnabled = ['gaia', 'wise'],
 }: Props) {
   const [copied, setCopied] = useState(false)
@@ -27,26 +32,25 @@ export default function ShareControls({
   const [loading, setLoading] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
 
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
-
   const generateShareLink = async () => {
     if (ra === undefined || dec === undefined) return
     setLoading(true)
 
     try {
-      const response = await fetch(`${apiBase}/api/share`, {
+      const response = await fetch(`${API_BASE_URL}/api/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ra: Number(ra),
           dec: Number(dec),
+          target_name: targetName || null,
           fov_arcmin: Number(fovArcmin),
           detector: detector || 'auto',
           selected_obs_id: selectedObsId || null,
           earlier_epoch: earlierEpoch || null,
           later_epoch: laterEpoch || null,
           overlays_enabled: overlaysEnabled,
-          active_view: 'viewer',
+          active_view: activeView,
         }),
       })
 

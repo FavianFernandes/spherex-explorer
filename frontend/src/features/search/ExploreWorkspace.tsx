@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Compass,
@@ -27,7 +27,27 @@ const PRESET_TARGETS = [
   { id: 'r-dra', name: 'R Draconis', ra: '248.167612', dec: '66.754961', fov: '15' },
 ]
 
-const DETECTORS = ['ALL', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6']
+const DETECTORS = ['ALL', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6'] as const
+type AnalysisTab = 'difference' | 'stacking' | 'overlays' | 'tracking'
+
+function resolveTabFromParams(params: URLSearchParams): string {
+  const explicitTab = params.get('tab')
+  if (explicitTab) return explicitTab
+  const view = params.get('view')
+  if (view === 'timelapse') return 'timelapse'
+  if (view === 'spectra' || view === 'analysis') return 'analysis'
+  if (view === 'overlays') return 'overlays'
+  return 'explore'
+}
+
+function normalizeDetectorParam(det: string | null): string {
+  if (!det) return 'ALL'
+  const upper = det.trim().toUpperCase()
+  if (upper === '' || upper === 'AUTO' || upper === 'ALL') return 'ALL'
+  if (/^[1-6]$/.test(upper)) return `D${upper}`
+  if (/^D[1-6]$/.test(upper)) return upper
+  return 'ALL'
+}
 
 export default function ExploreWorkspace() {
   const [params, setParams] = useSearchParams()
@@ -36,20 +56,47 @@ export default function ExploreWorkspace() {
   const raParam = params.get('ra') || '269.452075'
   const decParam = params.get('dec') || '4.693364'
   const fovParam = params.get('fov') || '15'
-  const activeTab = params.get('tab') || 'explore'
+  const activeTab = resolveTabFromParams(params)
+  const urlCoordKey = `${raParam}|${decParam}|${fovParam}`
 
-  // Input states
-  const [inputRa, setInputRa] = useState(raParam)
-  const [inputDec, setInputDec] = useState(decParam)
-  const [fovSlider, setFovSlider] = useState(Number(fovParam) || 15)
-  const [selectedDetector, setSelectedDetector] = useState<string>('ALL')
+  // Draft input states synced cleanly to URL coordinate changes without setState-in-effect
+  const [draftCoord, setDraftCoord] = useState(() => ({
+    key: urlCoordKey,
+    ra: raParam,
+    dec: decParam,
+    fov: Number(fovParam) || 15,
+  }))
+  const inputRa = draftCoord.key === urlCoordKey ? draftCoord.ra : raParam
+  const inputDec = draftCoord.key === urlCoordKey ? draftCoord.dec : decParam
+  const fovSlider = draftCoord.key === urlCoordKey ? draftCoord.fov : Number(fovParam) || 15
 
-  // Keep inputs and slider in sync with URL search params (e.g. preset targets or browser history)
-  useEffect(() => {
-    setInputRa(raParam)
-    setInputDec(decParam)
-    setFovSlider(Number(fovParam) || 15)
-  }, [raParam, decParam, fovParam])
+  const setInputRa = (val: string) =>
+    setDraftCoord((prev) => ({
+      key: urlCoordKey,
+      ra: val,
+      dec: prev.key === urlCoordKey ? prev.dec : decParam,
+      fov: prev.key === urlCoordKey ? prev.fov : Number(fovParam) || 15,
+    }))
+
+  const setInputDec = (val: string) =>
+    setDraftCoord((prev) => ({
+      key: urlCoordKey,
+      ra: prev.key === urlCoordKey ? prev.ra : raParam,
+      dec: val,
+      fov: prev.key === urlCoordKey ? prev.fov : Number(fovParam) || 15,
+    }))
+
+  const setFovSlider = (val: number) =>
+    setDraftCoord((prev) => ({
+      key: urlCoordKey,
+      ra: prev.key === urlCoordKey ? prev.ra : raParam,
+      dec: prev.key === urlCoordKey ? prev.dec : decParam,
+      fov: val,
+    }))
+
+  const [selectedDetector, setSelectedDetector] = useState<string>(() =>
+    normalizeDetectorParam(params.get('det')),
+  )
 
   // Coordinate parsing
   const raResult = useMemo(() => parseRightAscension(inputRa), [inputRa])
@@ -57,52 +104,98 @@ export default function ExploreWorkspace() {
 
   const parsedRa = Number(raParam)
   const parsedDec = Number(decParam)
+  const effectiveRa = Number.isFinite(parsedRa) ? parsedRa : 269.452075
+  const effectiveDec = Number.isFinite(parsedDec) ? parsedDec : 4.693364
   const parsedFov = Number(fovParam) || 15
 
   const { data, isPending, refetch } = useSearchObservations(
-    isNaN(parsedRa) ? 269.452075 : parsedRa,
-    isNaN(parsedDec) ? 4.693364 : parsedDec,
+    effectiveRa,
+    effectiveDec,
     parsedFov,
   )
 
   const identify = useIdentifyObject()
   const overlays = useCatalogOverlays()
 
+  const currentIdentify =
+    identify.data &&
+    identify.variables?.center_ra === effectiveRa &&
+    identify.variables?.center_dec === effectiveDec &&
+    identify.variables?.fov_arcmin === parsedFov
+      ? identify.data
+      : undefined
+
+  const currentOverlays =
+    overlays.data &&
+    overlays.variables?.ra === effectiveRa &&
+    overlays.variables?.dec === effectiveDec &&
+    overlays.variables?.fov_arcmin === parsedFov
+      ? overlays.data
+      : undefined
+
   const [identifyError, setIdentifyError] = useState('')
-  const [gaiaVisible, setGaiaVisible] = useState(() => params.get('layers')?.split(',').includes('gaia') ?? false)
-  const [wiseVisible, setWiseVisible] = useState(() => params.get('layers')?.split(',').includes('wise') ?? false)
-  const [activeAnalysisTab, setActiveAnalysisTab] = useState<'spectra' | 'difference' | 'stacking' | 'timelapse' | 'overlays' | 'tracking'>(
-    activeTab === 'analysis'
-      ? 'spectra'
+  const [layerState, setLayerState] = useState<{
+    tabKey: string
+    gaia: boolean
+    wise: boolean
+  }>(() => ({
+    tabKey: activeTab,
+    gaia:
+      activeTab === 'overlays' ||
+      (params.get('layers')?.split(',').includes('gaia') ?? false),
+    wise:
+      activeTab === 'overlays' ||
+      (params.get('layers')?.split(',').includes('wise') ?? false),
+  }))
+
+  const gaiaVisible =
+    layerState.tabKey === activeTab
+      ? layerState.gaia
+      : activeTab === 'overlays' || layerState.gaia
+  const wiseVisible =
+    layerState.tabKey === activeTab
+      ? layerState.wise
+      : activeTab === 'overlays' || layerState.wise
+
+  const setGaiaVisible = (val: boolean) =>
+    setLayerState({ tabKey: activeTab, gaia: val, wise: wiseVisible })
+  const setWiseVisible = (val: boolean) =>
+    setLayerState({ tabKey: activeTab, gaia: gaiaVisible, wise: val })
+
+  const [rightTabState, setRightTabState] = useState<{
+    urlTab: string
+    panel: AnalysisTab
+  }>(() => ({
+    urlTab: activeTab,
+    panel: activeTab === 'overlays' ? 'overlays' : 'difference',
+  }))
+
+  const activeAnalysisTab: AnalysisTab =
+    rightTabState.urlTab === activeTab
+      ? rightTabState.panel
       : activeTab === 'overlays'
       ? 'overlays'
-      : activeTab === 'timelapse'
-      ? 'timelapse'
-      : 'spectra'
-  )
+      : 'difference'
 
-  // Sync tab from URL if changed
-  useEffect(() => {
-    if (activeTab === 'analysis') setActiveAnalysisTab('spectra')
-    else if (activeTab === 'overlays') {
-      setActiveAnalysisTab('overlays')
-      setGaiaVisible(true)
-      setWiseVisible(true)
-      if (selectedFrame?.cutout_fits_url && !overlays.data && !overlays.isPending) {
-        loadOverlays()
-      }
-    } else if (activeTab === 'timelapse') setActiveAnalysisTab('timelapse')
-  }, [activeTab, selectedFrame?.cutout_fits_url])
+  const setActiveAnalysisTab = (panel: AnalysisTab) =>
+    setRightTabState({ urlTab: activeTab, panel })
 
   // Extract all observations and filter by detector if selected
   const allFrames = useMemo(
-    () => data?.epochs.flatMap((epoch) => epoch.observations).slice().sort((a, b) => a.mjd - b.mjd) ?? [],
+    () =>
+      data?.epochs
+        .flatMap((epoch) => epoch.observations)
+        .slice()
+        .sort((a, b) => a.mjd - b.mjd) ?? [],
     [data],
   )
 
   const frames = useMemo(() => {
     if (selectedDetector === 'ALL') return allFrames
-    return allFrames.filter((f) => f.detector === selectedDetector)
+    const normSel = selectedDetector.replace(/^D/i, '')
+    return allFrames.filter(
+      (f) => f.detector === selectedDetector || f.detector === normSel,
+    )
   }, [allFrames, selectedDetector])
 
   const [selectedId, setSelectedId] = useState(() => params.get('frame') ?? '')
@@ -113,15 +206,55 @@ export default function ExploreWorkspace() {
     ? frames.filter((frame) => selectedFrame.comparable_with.includes(frame.obs_id))
     : []
 
-  const compareFrame = comparableFrames.find((frame) => frame.obs_id === compareId) ?? comparableFrames[0]
+  const compareFrame =
+    comparableFrames.find((frame) => frame.obs_id === compareId) ?? comparableFrames[0]
   const selectedFrameId = selectedFrame?.obs_id
   const compareFrameId = compareFrame?.obs_id
+  const selectedCutoutUrl = selectedFrame?.cutout_fits_url
+  const triggerOverlays = overlays.mutate
+
+  const loadOverlays = useCallback(() => {
+    if (!selectedCutoutUrl) return
+
+    triggerOverlays({
+      cutout_fits_url: selectedCutoutUrl,
+      ra: effectiveRa,
+      dec: effectiveDec,
+      fov_arcmin: parsedFov,
+      include_wise_image_layer: true,
+      north_up_aligned: true,
+      frame_cutout_urls: Object.fromEntries(
+        frames.map((frame) => [frame.obs_id, frame.cutout_fits_url]),
+      ),
+    })
+  }, [
+    selectedCutoutUrl,
+    effectiveRa,
+    effectiveDec,
+    parsedFov,
+    frames,
+    triggerOverlays,
+  ])
+
+  // Auto-load Gaia/WISE overlays when user switches to Overlays view
+  useEffect(() => {
+    if (
+      activeTab === 'overlays' &&
+      selectedCutoutUrl &&
+      !currentOverlays &&
+      !overlays.isPending
+    ) {
+      loadOverlays()
+    }
+  }, [activeTab, selectedCutoutUrl, currentOverlays, overlays.isPending, loadOverlays])
 
   // URL synchronization
   useEffect(() => {
     const next = new URLSearchParams(params)
     if (selectedFrameId) next.set('frame', selectedFrameId)
+    else next.delete('frame')
     if (compareFrameId) next.set('compare', compareFrameId)
+    else next.delete('compare')
 
     const layers = [
       ...(gaiaVisible ? ['gaia'] : []),
@@ -130,19 +263,28 @@ export default function ExploreWorkspace() {
     if (layers.length) next.set('layers', layers.join(','))
     else next.delete('layers')
 
-    if (identify.data?.object_id) next.set('obj', identify.data.object_id)
+    if (currentIdentify?.object_id) next.set('obj', currentIdentify.object_id)
+    else next.delete('obj')
 
     if (next.toString() !== params.toString()) {
       setParams(next, { replace: true })
     }
-  }, [selectedFrameId, compareFrameId, gaiaVisible, wiseVisible, identify.data?.object_id, params, setParams])
+  }, [
+    selectedFrameId,
+    compareFrameId,
+    gaiaVisible,
+    wiseVisible,
+    currentIdentify?.object_id,
+    params,
+    setParams,
+  ])
 
   // Overlay markers calculation
   const overlayMarkers = useMemo<OverlayMarker[]>(() => {
-    if (!selectedFrameId || !overlays.data) return []
+    if (!selectedFrameId || !currentOverlays) return []
 
     const gaia = gaiaVisible
-      ? overlays.data.gaia_dr3_sources.flatMap((source) => {
+      ? currentOverlays.gaia_dr3_sources.flatMap((source) => {
           const point = source.frame_px[selectedFrameId] ?? source.frame_px.default
           return point
             ? [{
@@ -156,7 +298,7 @@ export default function ExploreWorkspace() {
       : []
 
     const wise = wiseVisible
-      ? overlays.data.wise_sources.flatMap((source) => {
+      ? currentOverlays.wise_sources.flatMap((source) => {
           const point = source.frame_px[selectedFrameId] ?? source.frame_px.default
           return point
             ? [{
@@ -170,27 +312,34 @@ export default function ExploreWorkspace() {
       : []
 
     return [...gaia, ...wise]
-  }, [selectedFrameId, overlays.data, gaiaVisible, wiseVisible])
+  }, [selectedFrameId, currentOverlays, gaiaVisible, wiseVisible])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!raResult.ok || !decResult.ok) return
 
+    identify.reset()
+    setIdentifyError('')
     const newParams = new URLSearchParams(params)
     newParams.set('ra', raResult.value.toFixed(6))
     newParams.set('dec', decResult.value.toFixed(6))
     newParams.set('fov', String(fovSlider))
+    newParams.delete('frame')
+    newParams.delete('compare')
+    newParams.delete('obj')
     setParams(newParams)
   }
 
   const handleQuickTarget = (target: typeof PRESET_TARGETS[0]) => {
-    setInputRa(target.ra)
-    setInputDec(target.dec)
-    setFovSlider(Number(target.fov))
+    identify.reset()
+    setIdentifyError('')
     const newParams = new URLSearchParams(params)
     newParams.set('ra', target.ra)
     newParams.set('dec', target.dec)
     newParams.set('fov', target.fov)
+    newParams.delete('frame')
+    newParams.delete('compare')
+    newParams.delete('obj')
     setParams(newParams)
   }
 
@@ -207,29 +356,15 @@ export default function ExploreWorkspace() {
       click_y: y,
       rendered_width: width,
       rendered_height: height,
-      center_ra: parsedRa,
-      center_dec: parsedDec,
+      center_ra: effectiveRa,
+      center_dec: effectiveDec,
       fov_arcmin: parsedFov,
-    } as any)
-  }
-
-  function loadOverlays() {
-    if (!selectedFrame?.cutout_fits_url) return
-
-    overlays.mutate({
-      cutout_fits_url: selectedFrame.cutout_fits_url,
-      ra: parsedRa,
-      dec: parsedDec,
-      fov_arcmin: parsedFov,
-      frame_cutout_urls: Object.fromEntries(
-        frames.map((frame) => [frame.obs_id, frame.cutout_fits_url]),
-      ),
     })
   }
 
   // Identify matching preset target name if any
   const currentTargetName = PRESET_TARGETS.find(
-    (t) => Math.abs(Number(t.ra) - parsedRa) < 0.01 && Math.abs(Number(t.dec) - parsedDec) < 0.01
+    (t) => Math.abs(Number(t.ra) - effectiveRa) < 0.01 && Math.abs(Number(t.dec) - effectiveDec) < 0.01
   )?.name
 
   return (
@@ -242,20 +377,22 @@ export default function ExploreWorkspace() {
             Scientific Observation Workspace
           </div>
           <h1 className="mt-1 font-heading text-2xl sm:text-3xl font-bold text-white">
-            {currentTargetName || `Target (${parsedRa.toFixed(4)}°, ${parsedDec.toFixed(4)}°)`}
+            {currentTargetName || `Target (${effectiveRa.toFixed(4)}°, ${effectiveDec.toFixed(4)}°)`}
           </h1>
           <p className="mt-1 text-xs text-observatory-muted">
             Field of View: {parsedFov} arcmin · Total Frames: {allFrames.length} · Survey Epochs: {data?.epochs.length || 0}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-3 rounded-xl transition ${activeTab === 'share' ? 'ring-2 ring-cyan-400/70 p-1 bg-cyan-950/30' : ''}`}>
           <ShareControls
-            ra={parsedRa}
-            dec={parsedDec}
+            ra={effectiveRa}
+            dec={effectiveDec}
+            targetName={currentTargetName}
             fovArcmin={parsedFov}
             detector={selectedDetector}
             selectedObsId={selectedFrame?.obs_id}
+            activeView={activeTab}
             overlaysEnabled={[...(gaiaVisible ? ['gaia'] : []), ...(wiseVisible ? ['wise'] : [])]}
           />
         </div>
@@ -463,8 +600,8 @@ export default function ExploreWorkspace() {
           {activeTab === 'analysis' ? (
             <div className="space-y-6">
               <SPHERExSpectralGraph
-                ra={parsedRa}
-                dec={parsedDec}
+                ra={effectiveRa}
+                dec={effectiveDec}
                 targetName={currentTargetName}
               />
               <div className="rounded-2xl border border-observatory-border/80 bg-observatory-surface/60 p-4 space-y-3">
@@ -479,7 +616,7 @@ export default function ExploreWorkspace() {
                     detector={selectedFrame.detector}
                     dateObs={selectedFrame.date_iso}
                     overlayMarkers={overlayMarkers}
-                    identifiedObject={identify.data}
+                    identifiedObject={currentIdentify}
                     onIdentify={identifyAt}
                   />
                 )}
@@ -488,8 +625,8 @@ export default function ExploreWorkspace() {
           ) : activeTab === 'timelapse' ? (
             <div className="space-y-6">
               <SPHERExTimeLapseViewer
-                ra={parsedRa}
-                dec={parsedDec}
+                ra={effectiveRa}
+                dec={effectiveDec}
                 fovArcmin={parsedFov}
                 targetName={currentTargetName}
               />
@@ -505,7 +642,7 @@ export default function ExploreWorkspace() {
                     detector={selectedFrame.detector}
                     dateObs={selectedFrame.date_iso}
                     overlayMarkers={overlayMarkers}
-                    identifiedObject={identify.data}
+                    identifiedObject={currentIdentify}
                     onIdentify={identifyAt}
                   />
                 )}
@@ -522,7 +659,7 @@ export default function ExploreWorkspace() {
                   detector={selectedFrame.detector}
                   dateObs={selectedFrame.date_iso}
                   overlayMarkers={overlayMarkers}
-                  identifiedObject={identify.data}
+                  identifiedObject={currentIdentify}
                   onIdentify={identifyAt}
                 />
               ) : isPending ? (
@@ -605,40 +742,40 @@ export default function ExploreWorkspace() {
               )}
 
               {/* Sub-Pixel Centroiding Astrometry HUD (When Clicked) */}
-              {identify.data && (
+              {currentIdentify && (
                 <section className="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 size={15} className="text-cyan-400" />
                       <h3 className="font-heading text-sm font-bold text-white">
-                        Sub-Pixel Centroided Astrometry: {identify.data.object_id}
+                        Sub-Pixel Centroided Astrometry: {currentIdentify.object_id}
                       </h3>
                     </div>
                     <span className="font-mono text-xs text-cyan-300">
-                      SNR: {identify.data.snr?.toFixed(2)}
+                      SNR: {currentIdentify.snr?.toFixed(2)}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
                     <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
                       <p className="text-[10px] text-observatory-muted uppercase">RA (J2000)</p>
-                      <p className="text-cyan-300 font-semibold">{identify.data.ra_deg.toFixed(6)}°</p>
-                      <p className="text-[10px] text-slate-400">{identify.data.ra_hms}</p>
+                      <p className="text-cyan-300 font-semibold">{currentIdentify.ra_deg.toFixed(6)}°</p>
+                      <p className="text-[10px] text-slate-400">{currentIdentify.ra_hms}</p>
                     </div>
                     <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
                       <p className="text-[10px] text-observatory-muted uppercase">Dec (J2000)</p>
-                      <p className="text-cyan-300 font-semibold">{identify.data.dec_deg.toFixed(6)}°</p>
-                      <p className="text-[10px] text-slate-400">{identify.data.dec_dms}</p>
+                      <p className="text-cyan-300 font-semibold">{currentIdentify.dec_deg.toFixed(6)}°</p>
+                      <p className="text-[10px] text-slate-400">{currentIdentify.dec_dms}</p>
                     </div>
                     <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
                       <p className="text-[10px] text-observatory-muted uppercase">Calibrated Flux</p>
-                      <p className="text-white font-semibold">{identify.data.flux_mjy_sr?.toFixed(4)} MJy/sr</p>
-                      <p className="text-[10px] text-slate-400">± {identify.data.flux_err_mjy_sr?.toFixed(4)}</p>
+                      <p className="text-white font-semibold">{currentIdentify.flux_mjy_sr?.toFixed(4)} MJy/sr</p>
+                      <p className="text-[10px] text-slate-400">± {currentIdentify.flux_err_mjy_sr?.toFixed(4)}</p>
                     </div>
                     <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-2.5">
                       <p className="text-[10px] text-observatory-muted uppercase">Bandpass / LVF</p>
-                      <p className="text-white font-semibold">{identify.data.wavelength_um?.toFixed(4)} µm</p>
-                      <p className="text-[10px] text-slate-400">Quality: {identify.data.quality_flag}</p>
+                      <p className="text-white font-semibold">{currentIdentify.wavelength_um?.toFixed(4)} µm</p>
+                      <p className="text-[10px] text-slate-400">Quality: {currentIdentify.quality_flag}</p>
                     </div>
                   </div>
                 </section>
@@ -647,14 +784,14 @@ export default function ExploreWorkspace() {
               {/* Full-Width Large Analysis Section for Spectral Graphs / Time-Lapse */}
               <div className="space-y-6 pt-2">
                 <SPHERExSpectralGraph
-                  ra={parsedRa}
-                  dec={parsedDec}
+                  ra={effectiveRa}
+                  dec={effectiveDec}
                   targetName={currentTargetName}
                 />
 
                 <SPHERExTimeLapseViewer
-                  ra={parsedRa}
-                  dec={parsedDec}
+                  ra={effectiveRa}
+                  dec={effectiveDec}
                   fovArcmin={parsedFov}
                   targetName={currentTargetName}
                 />
@@ -670,15 +807,17 @@ export default function ExploreWorkspace() {
           {/* Analysis View Tabs */}
           <div className="rounded-2xl border border-observatory-border bg-observatory-surface/90 p-4 shadow-lg space-y-4">
             <div className="flex flex-wrap items-center gap-1.5 border-b border-observatory-border/70 pb-3">
-              {[
-                { id: 'difference', label: 'Diff Image' },
-                { id: 'stacking', label: 'Stacking' },
-                { id: 'overlays', label: 'Overlays' },
-                { id: 'tracking', label: 'Tracking' },
-              ].map((tab) => (
+              {(
+                [
+                  { id: 'difference', label: 'Diff Image' },
+                  { id: 'stacking', label: 'Stacking' },
+                  { id: 'overlays', label: 'Overlays' },
+                  { id: 'tracking', label: 'Tracking' },
+                ] as const
+              ).map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveAnalysisTab(tab.id as any)}
+                  onClick={() => setActiveAnalysisTab(tab.id)}
                   className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
                     activeAnalysisTab === tab.id
                       ? 'border border-cyan-500/50 bg-cyan-500/15 text-cyan-300'
@@ -694,8 +833,9 @@ export default function ExploreWorkspace() {
             {activeAnalysisTab === 'difference' && (
               <DifferenceAnalysis
                 key={`${selectedFrame?.obs_id}-${compareFrame?.obs_id ?? 'none'}`}
-                ra={parsedRa}
-                dec={parsedDec}
+                ra={effectiveRa}
+                dec={effectiveDec}
+                fovArcmin={parsedFov}
                 firstFrame={selectedFrame}
                 secondFrame={compareFrame}
               />
@@ -704,8 +844,9 @@ export default function ExploreWorkspace() {
             {/* TAB CONTENT: Image Stacking */}
             {activeAnalysisTab === 'stacking' && (
               <ImageStacking
-                ra={parsedRa}
-                dec={parsedDec}
+                ra={effectiveRa}
+                dec={effectiveDec}
+                fovArcmin={parsedFov}
                 frames={frames}
                 currentDetector={selectedDetector !== 'ALL' ? selectedDetector : undefined}
               />
@@ -729,12 +870,12 @@ export default function ExploreWorkspace() {
                   {overlays.isPending ? 'Querying Gaia & WISE catalogs…' : 'Load Gaia DR3 & AllWISE Catalogs'}
                 </button>
 
-                {overlays.data && (
+                {currentOverlays && (
                   <div className="space-y-3 pt-2">
                     <label className="flex items-center justify-between rounded-lg border border-observatory-border/60 bg-[#07101e] p-3 text-xs cursor-pointer hover:border-cyan-500/40">
                       <span className="flex items-center gap-2 font-semibold text-blue-300">
                         <span className="h-2 w-2 rounded-full bg-blue-400" />
-                        Gaia DR3 Sources ({overlays.data.gaia_dr3_sources.length})
+                        Gaia DR3 Sources ({currentOverlays.gaia_dr3_sources.length})
                       </span>
                       <input
                         type="checkbox"
@@ -747,7 +888,7 @@ export default function ExploreWorkspace() {
                     <label className="flex items-center justify-between rounded-lg border border-observatory-border/60 bg-[#07101e] p-3 text-xs cursor-pointer hover:border-amber-500/40">
                       <span className="flex items-center gap-2 font-semibold text-amber-300">
                         <span className="h-2 w-2 rounded-full bg-amber-400" />
-                        AllWISE / WISE Sources ({overlays.data.wise_sources.length})
+                        AllWISE / WISE Sources ({currentOverlays.wise_sources.length})
                       </span>
                       <input
                         type="checkbox"
@@ -760,12 +901,12 @@ export default function ExploreWorkspace() {
                     <div className="rounded-lg border border-observatory-border/60 bg-[#07101e] p-3 text-xs">
                       <p className="text-slate-400">CSA NEOSSat Observations</p>
                       <p className="mt-1 font-mono text-cyan-300 font-bold">
-                        {overlays.data.csa_neossat_observations.length} CADC records found
+                        {currentOverlays.csa_neossat_observations.length} CADC records found
                       </p>
                     </div>
 
                     <a
-                      href={overlays.data.wiseview_url}
+                      href={currentOverlays.wiseview_url}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-block text-xs text-observatory-cyan underline hover:text-cyan-300"
@@ -780,9 +921,11 @@ export default function ExploreWorkspace() {
             {/* TAB CONTENT: Moving Object Tracking & Isolation */}
             {activeAnalysisTab === 'tracking' && (
               <TrackingIsolation
+                ra={effectiveRa}
+                dec={effectiveDec}
                 firstFrame={selectedFrame}
                 secondFrame={compareFrame}
-                source={identify.data}
+                source={currentIdentify}
               />
             )}
           </div>

@@ -1,4 +1,4 @@
-"""
+r"""
 test_5_targets.py
 
 Run from the backend directory:

@@ -1,5 +1,27 @@
-﻿// @ts-nocheck
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { API_BASE_URL } from "@/api/baseUrl";
+import type { components } from "@/api/schema";
+
+type SpectrumCompareResponse = components["schemas"]["SpectrumCompareResponse"];
+type EpochSpectrumBundle = components["schemas"]["EpochSpectrumBundle"];
+
+interface PlotlyLike {
+  react: (
+    root: HTMLElement,
+    data: Array<Record<string, unknown>>,
+    layout: Record<string, unknown>,
+    config?: Record<string, unknown>,
+  ) => void;
+}
+
+type WindowWithPlotly = Window & { Plotly?: PlotlyLike };
+
+export interface SPHERExSpectralGraphProps {
+  ra: number | string;
+  dec: number | string;
+  targetName?: string;
+  apiBaseUrl?: string;
+}
 
 const LINE_COLORS = ["#38bdf8", "#f59e0b", "#10b981", "#a855f7", "#ec4899", "#06b6d4"];
 
@@ -13,16 +35,18 @@ const DETECTOR_BANDS = [
 ];
 
 function usePlotlyLoaded(): boolean {
-  const [ready, setReady] = useState<boolean>(() => Boolean((window as any).Plotly));
+  const [ready, setReady] = useState<boolean>(() =>
+    Boolean((window as WindowWithPlotly).Plotly),
+  );
   useEffect(() => {
-    if ((window as any).Plotly) {
-      setReady(true);
+    if ((window as WindowWithPlotly).Plotly) {
       return;
     }
     const existing = document.getElementById("plotly-cdn-script") as HTMLScriptElement | null;
     if (existing) {
-      existing.addEventListener("load", () => setReady(true));
-      return;
+      const onLoad = () => setReady(true);
+      existing.addEventListener("load", onLoad);
+      return () => existing.removeEventListener("load", onLoad);
     }
     const script = document.createElement("script");
     script.id = "plotly-cdn-script";
@@ -38,14 +62,14 @@ function usePlotlyLoaded(): boolean {
   return ready;
 }
 
-function getEpochXY(ep: any) {
-  if (!ep) return { x: [], y: [] };
+function getEpochXY(ep?: EpochSpectrumBundle | null) {
+  if (!ep) return { x: [] as number[], y: [] as (number | null)[] };
   const x: number[] = [];
   const y: (number | null)[] = [];
   if (ep.channels_102 && ep.channels_102.length === 102) {
     for (const ch of ep.channels_102) {
       x.push(Number(ch.wavelength_um));
-      y.push(ch.measured && ch.flux !== null ? Number(ch.flux) : null);
+      y.push(ch.measured && ch.flux !== null && ch.flux !== undefined ? Number(ch.flux) : null);
     }
   } else if (ep.raw_points && ep.raw_points.length > 0) {
     for (const pt of ep.raw_points) {
@@ -223,16 +247,26 @@ function SvgSpectrumChart({
   );
 }
 
-export const SPHERExSpectralGraph = ({
+export const SPHERExSpectralGraph: React.FC<SPHERExSpectralGraphProps> = ({
   ra,
   dec,
   targetName,
-  apiBaseUrl = import.meta.env?.VITE_API_BASE_URL || "http://127.0.0.1:8000",
-}: any) => {
+  apiBaseUrl = API_BASE_URL,
+}) => {
   const plotlyReady = usePlotlyLoaded();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const baseUrl = apiBaseUrl.replace(/\/$/, "");
+  const hasCoords = ra !== undefined && dec !== undefined && ra !== "" && dec !== "";
+  const requestKey = hasCoords ? `${ra}|${dec}|${baseUrl}` : "";
+
+  const [fetchState, setFetchState] = useState<{
+    completedKey: string;
+    data: SpectrumCompareResponse | null;
+    error: string | null;
+  }>({ completedKey: "", data: null, error: null });
+
+  const loading = Boolean(requestKey && fetchState.completedKey !== requestKey);
+  const data = fetchState.completedKey === requestKey ? fetchState.data : null;
+  const error = fetchState.completedKey === requestKey ? fetchState.error : null;
 
   const [selectedSingleEpoch, setSelectedSingleEpoch] = useState<string>("");
   const [comparedEpochs, setComparedEpochs] = useState<string[]>([]);
@@ -246,19 +280,17 @@ export const SPHERExSpectralGraph = ({
   const compareChartRef = useRef<HTMLDivElement | null>(null);
   const diffChartRef = useRef<HTMLDivElement | null>(null);
 
-  const resolveUrl = (url?: string) => {
+  const resolveUrl = (url?: string | null) => {
     if (!url) return "";
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    return `${apiBaseUrl.replace(/\/$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+    return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
   };
 
   useEffect(() => {
-    if (ra === undefined || dec === undefined || ra === "" || dec === "") return;
+    if (!requestKey) return;
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
 
-    fetch(`${apiBaseUrl.replace(/\/$/, "")}/api/spectra/compare`, {
+    fetch(`${baseUrl}/api/spectra/compare`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
@@ -266,10 +298,10 @@ export const SPHERExSpectralGraph = ({
     })
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
+        return (await res.json()) as SpectrumCompareResponse;
       })
       .then((payload) => {
-        setData(payload);
+        setFetchState({ completedKey: requestKey, data: payload, error: null });
         const epochs = payload.available_epochs || [];
         setSelectedSingleEpoch(epochs[0] || "");
         setComparedEpochs(epochs);
@@ -278,16 +310,21 @@ export const SPHERExSpectralGraph = ({
         setDiffLateEpoch(epochs[epochs.length - 1] || epochs[0] || "");
         setEpochToAdd(epochs[0] || "");
       })
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err.message || "Failed to load SPHEREx spectral data.");
-      })
-      .finally(() => setLoading(false));
+      .catch((err: Error) => {
+        if (err.name !== "AbortError") {
+          setFetchState({
+            completedKey: requestKey,
+            data: null,
+            error: err.message || "Failed to load SPHEREx spectral data.",
+          });
+        }
+      });
 
     return () => controller.abort();
-  }, [ra, dec, apiBaseUrl]);
+  }, [ra, dec, baseUrl, requestKey]);
 
   const epochMap = useMemo(() => {
-    const map: Record<string, any> = {};
+    const map: Record<string, EpochSpectrumBundle> = {};
     for (const ep of data?.epoch_spectra || []) map[ep.epoch_id] = ep;
     return map;
   }, [data]);
@@ -304,7 +341,7 @@ export const SPHERExSpectralGraph = ({
 
   // Plotly Graph 1: Individual Spectrum
   useEffect(() => {
-    const Plotly = (window as any).Plotly;
+    const Plotly = (window as WindowWithPlotly).Plotly;
     if (!plotlyReady || !Plotly || !singleChartRef.current || !data) return;
     const ep = epochMap[selectedSingleEpoch] || data.epoch_spectra?.[0];
     if (!ep) return;
@@ -318,15 +355,15 @@ export const SPHERExSpectralGraph = ({
           type: "scatter",
           mode: "lines+markers",
           connectgaps: true,
-          name: `${ep.epoch_id} (${ep.observation_date})`,
+          name: `${ep.epoch_id} (${ep.observation_date ?? ""})`,
           line: { color: "#38bdf8", width: 2 },
           marker: { size: 5, color: "#38bdf8" },
-          hovertemplate: `<b>${ep.epoch_id} (${ep.observation_date})</b><br>λ: %{x:.4f} µm<br>Flux: %{y:.4f} ${data.flux_unit}<extra></extra>`,
+          hovertemplate: `<b>${ep.epoch_id} (${ep.observation_date ?? ""})</b><br>λ: %{x:.4f} µm<br>Flux: %{y:.4f} ${data.flux_unit}<extra></extra>`,
         },
       ],
       {
         title: {
-          text: `Graph 1: Individual SPHEREx Spectrum · ${ep.epoch_id} (${ep.observation_date})`,
+          text: `Graph 1: Individual SPHEREx Spectrum · ${ep.epoch_id} (${ep.observation_date ?? ""})`,
           font: { color: "#f8fafc", size: 13 },
         },
         paper_bgcolor: "#0f172a",
@@ -342,7 +379,7 @@ export const SPHERExSpectralGraph = ({
 
   // Plotly Graph 2: Multi-Epoch Spectral Comparison
   useEffect(() => {
-    const Plotly = (window as any).Plotly;
+    const Plotly = (window as WindowWithPlotly).Plotly;
     if (!plotlyReady || !Plotly || !compareChartRef.current || !data) return;
     const traces = comparedEpochs
       .filter((eid) => !hiddenEpochs[eid] && epochMap[eid])
@@ -356,10 +393,10 @@ export const SPHERExSpectralGraph = ({
           type: "scatter",
           mode: "lines+markers",
           connectgaps: true,
-          name: `${ep.epoch_id} (${ep.observation_date})`,
+          name: `${ep.epoch_id} (${ep.observation_date ?? ""})`,
           line: { color, width: 2 },
           marker: { size: 4, color },
-          hovertemplate: `<b>${ep.epoch_id} (${ep.observation_date})</b><br>λ: %{x:.4f} µm<br>Flux: %{y:.4f} ${data.flux_unit}<extra></extra>`,
+          hovertemplate: `<b>${ep.epoch_id} (${ep.observation_date ?? ""})</b><br>λ: %{x:.4f} µm<br>Flux: %{y:.4f} ${data.flux_unit}<extra></extra>`,
         };
       });
     Plotly.react(
@@ -383,7 +420,7 @@ export const SPHERExSpectralGraph = ({
 
   // Plotly Graph 3: Difference Spectrum
   useEffect(() => {
-    const Plotly = (window as any).Plotly;
+    const Plotly = (window as WindowWithPlotly).Plotly;
     if (!plotlyReady || !Plotly || !diffChartRef.current || !data) return;
     const earlyEp = epochMap[diffEarlyEpoch] || data.earlier_epoch;
     const lateEp = epochMap[diffLateEpoch] || data.later_epoch;
@@ -586,9 +623,9 @@ export const SPHERExSpectralGraph = ({
                 onChange={(e) => setSelectedSingleEpoch(e.target.value)}
                 style={{ background: "#1e293b", color: "#fff", border: "1px solid #334155", padding: "4px 8px", borderRadius: 4, fontSize: 12 }}
               >
-                {data.epoch_spectra.map((ep: any) => (
+                {data.epoch_spectra.map((ep) => (
                   <option key={ep.epoch_id} value={ep.epoch_id}>
-                    {ep.epoch_id} ({ep.observation_date})
+                    {ep.epoch_id} ({ep.observation_date ?? ""})
                   </option>
                 ))}
               </select>
@@ -629,7 +666,7 @@ export const SPHERExSpectralGraph = ({
                 onChange={(e) => setEpochToAdd(e.target.value)}
                 style={{ background: "#1e293b", color: "#fff", border: "1px solid #334155", padding: "4px 8px", borderRadius: 4, fontSize: 12 }}
               >
-                {data.epoch_spectra.map((ep: any) => (
+                {data.epoch_spectra.map((ep) => (
                   <option key={ep.epoch_id} value={ep.epoch_id}>
                     {ep.epoch_id}
                   </option>
@@ -650,7 +687,7 @@ export const SPHERExSpectralGraph = ({
                 onChange={(e) => setDiffLateEpoch(e.target.value)}
                 style={{ background: "#1e293b", color: "#fff", border: "1px solid #334155", padding: "4px 8px", borderRadius: 4, fontSize: 12 }}
               >
-                {data.epoch_spectra.map((ep: any) => (
+                {data.epoch_spectra.map((ep) => (
                   <option key={ep.epoch_id} value={ep.epoch_id}>
                     Later: {ep.epoch_id}
                   </option>
@@ -662,7 +699,7 @@ export const SPHERExSpectralGraph = ({
                 onChange={(e) => setDiffEarlyEpoch(e.target.value)}
                 style={{ background: "#1e293b", color: "#fff", border: "1px solid #334155", padding: "4px 8px", borderRadius: 4, fontSize: 12 }}
               >
-                {data.epoch_spectra.map((ep: any) => (
+                {data.epoch_spectra.map((ep) => (
                   <option key={ep.epoch_id} value={ep.epoch_id}>
                     Earlier: {ep.epoch_id}
                   </option>

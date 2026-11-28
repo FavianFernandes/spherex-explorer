@@ -1,5 +1,5 @@
-// @ts-nocheck
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { API_BASE_URL } from "@/api/baseUrl";
 
 export interface PixelPoint {
   x: number;
@@ -81,14 +81,10 @@ export const SPHERExTimeLapseViewer: React.FC<SPHERExTimeLapseViewerProps> = ({
   fovArcmin = 15.0,
   initialDetector = "auto",
   targetName,
-  apiBaseUrl = import.meta.env?.VITE_API_BASE_URL || "http://127.0.0.1:8000",
+  apiBaseUrl = API_BASE_URL,
   onFrameSelect,
 }) => {
-  const [data, setData] = useState<TimeLapseResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [preloadingImages, setPreloadingImages] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const baseUrl = apiBaseUrl.replace(/\/$/, "");
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
@@ -99,25 +95,47 @@ export const SPHERExTimeLapseViewer: React.FC<SPHERExTimeLapseViewerProps> = ({
   const [isolateObject, setIsolateObject] = useState<boolean>(false);
   const [showReticle, setShowReticle] = useState<boolean>(true);
 
-  const timerRef = useRef<number | null>(null);
+  const hasCoords = ra !== undefined && dec !== undefined && ra !== "" && dec !== "";
+  const requestKey = hasCoords
+    ? `${ra}|${dec}|${fovArcmin}|${detector}|${alignmentMode}|${samplingMode}|${isolateObject}|${targetName ?? ""}|${baseUrl}`
+    : "";
 
-  const resolveUrl = (relativePath: string): string => {
-    if (!relativePath) return "";
-    if (relativePath.startsWith("http://") || relativePath.startsWith("https://")) {
-      return relativePath;
-    }
-    return `${apiBaseUrl.replace(/\/$/, "")}${relativePath}`;
-  };
+  const [fetchState, setFetchState] = useState<{
+    completedKey: string;
+    data: TimeLapseResponse | null;
+    preloading: boolean;
+    error: string | null;
+  }>({ completedKey: "", data: null, preloading: false, error: null });
+
+  const loading = Boolean(requestKey && fetchState.completedKey !== requestKey);
+  const data = fetchState.completedKey === requestKey ? fetchState.data : null;
+  const preloadingImages = fetchState.completedKey === requestKey && fetchState.preloading;
+  const error = fetchState.completedKey === requestKey ? fetchState.error : null;
+
+  const timerRef = useRef<number | null>(null);
+  const playbackConfigRef = useRef({ playbackSpeed, loop });
+  useEffect(() => {
+    playbackConfigRef.current = { playbackSpeed, loop };
+  }, [playbackSpeed, loop]);
+
+  const resolveUrl = useCallback(
+    (relativePath: string): string => {
+      if (!relativePath) return "";
+      if (relativePath.startsWith("http://") || relativePath.startsWith("https://")) {
+        return relativePath;
+      }
+      return `${baseUrl}${relativePath.startsWith("/") ? "" : "/"}${relativePath}`;
+    },
+    [baseUrl],
+  );
 
   useEffect(() => {
-    if (ra === undefined || dec === undefined || ra === "" || dec === "") return;
+    if (!requestKey) return;
 
     const controller = new AbortController();
-    setIsPlaying(false);
-    setLoading(true);
-    setError(null);
+    const { playbackSpeed: speed, loop: loopEnabled } = playbackConfigRef.current;
 
-    fetch(`${apiBaseUrl.replace(/\/$/, "")}/api/images/timelapse`, {
+    fetch(`${baseUrl}/api/images/timelapse`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
@@ -129,8 +147,8 @@ export const SPHERExTimeLapseViewer: React.FC<SPHERExTimeLapseViewerProps> = ({
         alignment_mode: alignmentMode,
         sampling_mode: samplingMode,
         isolate_moving_object: isolateObject,
-        playback_speed: playbackSpeed,
-        loop,
+        playback_speed: speed,
+        loop: loopEnabled,
         target_name: targetName,
       }),
     })
@@ -142,9 +160,9 @@ export const SPHERExTimeLapseViewer: React.FC<SPHERExTimeLapseViewerProps> = ({
         return res.json() as Promise<TimeLapseResponse>;
       })
       .then(async (payload) => {
-        setData(payload);
+        setIsPlaying(false);
         setCurrentIndex(0);
-        setPreloadingImages(true);
+        setFetchState({ completedKey: requestKey, data: payload, preloading: true, error: null });
         await Promise.all(
           payload.frames.map(
             (frame) =>
@@ -156,23 +174,30 @@ export const SPHERExTimeLapseViewer: React.FC<SPHERExTimeLapseViewerProps> = ({
               })
           )
         );
-        setPreloadingImages(false);
+        if (!controller.signal.aborted) {
+          setFetchState((prev) =>
+            prev.completedKey === requestKey ? { ...prev, preloading: false } : prev,
+          );
+        }
       })
       .catch((err: Error) => {
         if (err.name !== "AbortError") {
-          setError(err.message || "Unable to generate SPHEREx time-lapse.");
+          setIsPlaying(false);
+          setFetchState({
+            completedKey: requestKey,
+            data: null,
+            preloading: false,
+            error: err.message || "Unable to generate SPHEREx time-lapse.",
+          });
         }
-      })
-      .finally(() => {
-        setLoading(false);
       });
 
     return () => controller.abort();
-  }, [ra, dec, fovArcmin, detector, alignmentMode, samplingMode, isolateObject, targetName, apiBaseUrl]);
+  }, [ra, dec, fovArcmin, detector, alignmentMode, samplingMode, isolateObject, targetName, baseUrl, requestKey, resolveUrl]);
 
   useEffect(() => {
     if (timerRef.current !== null) {
-      window.clearInterval(timerRef.current);
+      window.clearTimeout(timerRef.current);
       timerRef.current = null;
     }
     if (!isPlaying || !data || data.frames.length < 2) {
@@ -180,23 +205,23 @@ export const SPHERExTimeLapseViewer: React.FC<SPHERExTimeLapseViewerProps> = ({
     }
 
     const intervalMs = Math.max(120, Math.round(650 / playbackSpeed));
-    timerRef.current = window.setInterval(() => {
-      setCurrentIndex((prev) => {
-        const next = prev + 1;
-        if (next < data.frames.length) return next;
-        if (loop) return 0;
+    timerRef.current = window.setTimeout(() => {
+      if (currentIndex + 1 < data.frames.length) {
+        setCurrentIndex(currentIndex + 1);
+      } else if (loop) {
+        setCurrentIndex(0);
+      } else {
         setIsPlaying(false);
-        return prev;
-      });
+      }
     }, intervalMs);
 
     return () => {
       if (timerRef.current !== null) {
-        window.clearInterval(timerRef.current);
+        window.clearTimeout(timerRef.current);
         timerRef.current = null;
       }
     };
-  }, [isPlaying, playbackSpeed, loop, data]);
+  }, [isPlaying, playbackSpeed, loop, data, currentIndex]);
 
   const currentFrame: TimeLapseFrameMetadata | null = useMemo(() => {
     if (!data || data.frames.length === 0) return null;
@@ -565,7 +590,12 @@ export const SPHERExTimeLapseViewer: React.FC<SPHERExTimeLapseViewerProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setIsPlaying((p) => !p)}
+                    onClick={() => {
+                      if (!isPlaying && data && currentIndex >= data.frames.length - 1) {
+                        setCurrentIndex(0);
+                      }
+                      setIsPlaying((p) => !p);
+                    }}
                     disabled={data.frames.length < 2}
                     style={{
                       background: isPlaying ? "#f59e0b" : "#0284c7",

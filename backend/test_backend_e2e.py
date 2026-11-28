@@ -54,7 +54,7 @@ def run_tests():
     tl_res = create_timelapse(TimeLapseRequest(ra=269.452075, dec=4.693364, fov_arcmin=15.0))
     tl_frames = tl_res["frames"]
     assert len(tl_frames) > 0
-    print(f"   -> Timelapse OK: {len(tl_frames)} frames, cadence = {tl_res.get('cadence_days')} days", flush=True)
+    print(f"   -> Timelapse OK: {len(tl_frames)} frames, baseline = {tl_res.get('time_baseline_days')} days", flush=True)
 
     print("6. Testing create_share_link() & get_shared_investigation()...", flush=True)
     req = ShareInvestigationRequest(

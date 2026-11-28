@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent, WheelEvent, MouseEvent } from 'react'
 import { ZoomIn, ZoomOut, RotateCcw, Crosshair } from 'lucide-react'
+import { resolveApiUrl } from '@/api/baseUrl'
 import type { components } from '@/api/schema'
 
 type PixelPoint = components['schemas']['PixelPoint']
@@ -29,6 +30,7 @@ type Props = {
     dec_dms: string
     snr: number
     flux_mjy_sr: number
+    target_px?: PixelPoint
   } | null
   onIdentify?: (x: number, y: number, width: number, height: number) => void
 }
@@ -37,6 +39,15 @@ type ViewTransform = {
   zoom: number
   x: number
   y: number
+}
+
+type ImageDrawBox = {
+  x: number
+  y: number
+  drawWidth: number
+  drawHeight: number
+  imgWidth: number
+  imgHeight: number
 }
 
 export default function SkyViewer({
@@ -53,15 +64,14 @@ export default function SkyViewer({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const view = useRef<ViewTransform>({ zoom: 1, x: 0, y: 0 })
+  const imageBoxRef = useRef<ImageDrawBox | null>(null)
   const redraw = useRef<() => void>(() => {})
   const drag = useRef({ active: false, moved: false, x: 0, y: 0 })
-  const [imageError, setImageError] = useState(false)
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const [hoverCoords, setHoverCoords] = useState<{ x: number; y: number } | null>(null)
 
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
-  const resolvedImageUrl = imageUrl?.startsWith('/')
-    ? `${apiBase}${imageUrl}`
-    : imageUrl
+  const resolvedImageUrl = resolveApiUrl(imageUrl)
+  const imageError = Boolean(resolvedImageUrl && failedUrl === resolvedImageUrl)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -83,6 +93,7 @@ export default function SkyViewer({
       context.fillRect(0, 0, width, height)
 
       if (!loaded || !image) {
+        imageBoxRef.current = null
         context.fillStyle = '#9aa9c2'
         context.font = '14px Inter, sans-serif'
         context.textAlign = 'center'
@@ -100,8 +111,17 @@ export default function SkyViewer({
       const drawHeight = image.height * scale
       const x = (width - drawWidth) / 2 + view.current.x
       const y = (height - drawHeight) / 2 + view.current.y
+      imageBoxRef.current = {
+        x,
+        y,
+        drawWidth,
+        drawHeight,
+        imgWidth: image.width,
+        imgHeight: image.height,
+      }
 
       // Draw background observation
+      context.imageSmoothingEnabled = false
       context.drawImage(image, x, y, drawWidth, drawHeight)
 
       // Draw Orientation Compass (North / East) in top-left corner
@@ -141,6 +161,25 @@ export default function SkyViewer({
         context.stroke()
       }
 
+      // Identified clicked source reticle
+      if (identifiedObject?.target_px) {
+        const ix = x + identifiedObject.target_px.x * scale
+        const iy = y + identifiedObject.target_px.y * scale
+        context.strokeStyle = '#34d399'
+        context.lineWidth = 1.8
+        context.beginPath()
+        context.arc(ix, iy, 10, 0, Math.PI * 2)
+        context.moveTo(ix - 15, iy)
+        context.lineTo(ix - 6, iy)
+        context.moveTo(ix + 6, iy)
+        context.lineTo(ix + 15, iy)
+        context.moveTo(ix, iy - 15)
+        context.lineTo(ix, iy - 6)
+        context.moveTo(ix, iy + 6)
+        context.lineTo(ix, iy + 15)
+        context.stroke()
+      }
+
       // Catalog Overlays
       for (const marker of overlayMarkers) {
         const mx = x + marker.x * scale
@@ -173,18 +212,17 @@ export default function SkyViewer({
     resize()
 
     if (resolvedImageUrl) {
-      setImageError(false)
       image = new Image()
       image.onload = () => {
         loaded = true
         loadFailed = false
-        setImageError(false)
+        setFailedUrl((prev) => (prev === resolvedImageUrl ? null : prev))
         draw()
       }
       image.onerror = () => {
         loaded = false
         loadFailed = true
-        setImageError(true)
+        setFailedUrl(resolvedImageUrl)
         draw()
       }
       image.src = resolvedImageUrl
@@ -199,7 +237,7 @@ export default function SkyViewer({
         image.onerror = null
       }
     }
-  }, [resolvedImageUrl, targetPx, overlayMarkers])
+  }, [resolvedImageUrl, targetPx, overlayMarkers, identifiedObject])
 
   function zoomBy(factor: number) {
     view.current.zoom = Math.max(0.5, Math.min(8, view.current.zoom * factor))
@@ -254,12 +292,23 @@ export default function SkyViewer({
   function handleClick(event: MouseEvent<HTMLCanvasElement>) {
     if (drag.current.moved || !resolvedImageUrl || imageError || !onIdentify) return
     const rect = event.currentTarget.getBoundingClientRect()
-    onIdentify(
-      event.clientX - rect.left,
-      event.clientY - rect.top,
-      rect.width,
-      rect.height,
-    )
+    const canvasX = event.clientX - rect.left
+    const canvasY = event.clientY - rect.top
+    const box = imageBoxRef.current
+    if (!box || box.drawWidth <= 0 || box.drawHeight <= 0) return
+
+    if (
+      canvasX < box.x ||
+      canvasX > box.x + box.drawWidth ||
+      canvasY < box.y ||
+      canvasY > box.y + box.drawHeight
+    ) {
+      return
+    }
+
+    const imgX = ((canvasX - box.x) / box.drawWidth) * box.imgWidth
+    const imgY = ((canvasY - box.y) / box.drawHeight) * box.imgHeight
+    onIdentify(imgX, imgY, box.imgWidth, box.imgHeight)
   }
 
   return (

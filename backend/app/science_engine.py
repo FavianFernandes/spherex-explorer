@@ -1,5 +1,5 @@
 """
-NASA SPHEREx Explorer ? Scientific Analysis & Image Processing Engine (v2.4.0 Final)
+NASA SPHEREx Explorer — Scientific Analysis & Image Processing Engine (v2.4.0 Final)
 """
 
 from __future__ import annotations
@@ -24,7 +24,8 @@ from typing import Any
 
 import astropy.units as u
 import matplotlib
-import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.stats import sigma_clipped_stats
@@ -490,9 +491,11 @@ def render_spectrum_comparison_png(
     ).hexdigest()[:16]
     out_png = conn.CACHE_DIR / f"spectrum_{key}.png"
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(10.0, 5.8), dpi=135, sharex=True, gridspec_kw={"height_ratios": [2.1, 1.15]}
-    )
+    fig = Figure(figsize=(10.0, 5.8), dpi=135)
+    FigureCanvasAgg(fig)
+    gs = fig.add_gridspec(2, 1, height_ratios=[2.1, 1.15])
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1], sharex=ax1)
     fig.patch.set_facecolor("#0b1020")
     for ax in (ax1, ax2):
         ax.set_facecolor("#0f172a")
@@ -544,9 +547,8 @@ def render_spectrum_comparison_png(
     ax2.set_xlabel("Wavelength (um)", color="#e2e8f0", fontsize=9)
     ax2.set_ylabel(f"Delta Flux ({later_epoch['epoch_id']} - {earlier_epoch['epoch_id']})", color="#e2e8f0", fontsize=8.5)
 
-    plt.tight_layout()
+    fig.tight_layout()
     fig.savefig(out_png, dpi=135, facecolor=fig.get_facecolor())
-    plt.close(fig)
     return f"/api/cache/{out_png.name}"
 
 
@@ -568,6 +570,16 @@ def _nan_preserving_gaussian(arr: np.ndarray, sigma: float) -> np.ndarray:
     return np.where(valid & (smooth_w > 1e-4), smooth_data / np.maximum(1e-4, smooth_w), np.nan)
 
 
+def _safe_bg_stats(arr: np.ndarray, sigma: float = 3.0, maxiters: int = 5) -> tuple[float, float]:
+    valid = arr[np.isfinite(arr)]
+    if valid.size == 0:
+        return 0.0, 0.1
+    _, med, std = sigma_clipped_stats(valid, sigma=sigma, maxiters=maxiters)
+    med_f = float(med) if np.isfinite(med) else 0.0
+    std_f = max(float(std) if np.isfinite(std) else 0.1, 1e-4)
+    return med_f, std_f
+
+
 def generate_difference_image(
     early_cutout_url: str,
     late_cutout_url: str,
@@ -585,10 +597,10 @@ def generate_difference_image(
     img_e[(mef_e["flags"] & conn.UNUSABLE_BITMASK) != 0] = np.nan
     img_l[(mef_l["flags"] & conn.UNUSABLE_BITMASK) != 0] = np.nan
 
-    _, med_e, std_e = sigma_clipped_stats(img_e[np.isfinite(img_e)], sigma=3.0, maxiters=5)
-    _, med_l, std_l = sigma_clipped_stats(img_l[np.isfinite(img_l)], sigma=3.0, maxiters=5)
-    img_e -= float(med_e)
-    img_l -= float(med_l)
+    med_e, std_e = _safe_bg_stats(img_e, sigma=3.0, maxiters=5)
+    med_l, std_l = _safe_bg_stats(img_l, sigma=3.0, maxiters=5)
+    img_e -= med_e
+    img_l -= med_l
 
     canon_wcs, canon_shape = conn.build_north_up_wcs(
         target_coord.ra.deg, target_coord.dec.deg, fov_arcmin, mef_l["pixel_scale_arcsec"]
@@ -687,6 +699,8 @@ def generate_difference_image(
         neg_list.sort(key=lambda x: x["sigma"], reverse=True)
         dt_yr = max(1e-3, abs(Time(mef_l["date_obs"]).jyear - Time(mef_e["date_obs"]).jyear))
         paired_neg_indices: set[int] = set()
+        fov_gaia_late = conn.query_gaia_dr3_cone(target_coord, radius_arcmin=fov_arcmin / 2.0 + 1.0, obs_date_iso=mef_l["date_obs"])
+        preloaded_late = fov_gaia_late if len(fov_gaia_late) < 80 else None
 
         for p in pos_list[:8]:
             px_x = round(p["fx"], 2)
@@ -701,7 +715,9 @@ def generate_difference_image(
                     best_neg = n
                     best_neg_idx = n_idx
 
-            gaia_xm = conn.crossmatch_coord_with_gaia_dr3(p["coord"], obs_date_iso=mef_l["date_obs"])
+            gaia_xm = conn.crossmatch_coord_with_gaia_dr3(
+                p["coord"], obs_date_iso=mef_l["date_obs"], preloaded_sources=preloaded_late
+            )
             if best_neg is not None:
                 paired_neg_indices.add(best_neg_idx)
                 match_info = {
@@ -741,12 +757,17 @@ def generate_difference_image(
                 "match": match_info,
             })
 
+        fov_gaia_early = conn.query_gaia_dr3_cone(target_coord, radius_arcmin=fov_arcmin / 2.0 + 1.0, obs_date_iso=mef_e["date_obs"])
+        preloaded_early = fov_gaia_early if len(fov_gaia_early) < 80 else None
+
         for n_idx, n in enumerate(neg_list[:6]):
             if n_idx in paired_neg_indices or len(candidates) >= 12:
                 continue
             px_x = round(n["fx"], 2)
             px_y = round((ny - 1) - n["fy"], 2)
-            gaia_xm = conn.crossmatch_coord_with_gaia_dr3(n["coord"], obs_date_iso=mef_e["date_obs"])
+            gaia_xm = conn.crossmatch_coord_with_gaia_dr3(
+                n["coord"], obs_date_iso=mef_e["date_obs"], preloaded_sources=preloaded_early
+            )
             candidates.append({
                 "candidate_id": f"CAND-{len(candidates) + 1:02d}",
                 "residual_type": "negative_earlier_brighter",
@@ -847,8 +868,8 @@ def stack_compatible_observations(
         img[bad] = np.nan
         var[bad] = np.nan
 
-        _, med, _ = sigma_clipped_stats(img[np.isfinite(img)], sigma=3.0)
-        img -= float(med)
+        med, _ = _safe_bg_stats(img, sigma=3.0)
+        img -= med
 
         img_r, _ = reproject_interp((img, m["wcs"]), canon_wcs, shape_out=(ny, nx))
         var_r, _ = reproject_interp((var, m["wcs"]), canon_wcs, shape_out=(ny, nx))
@@ -864,16 +885,17 @@ def stack_compatible_observations(
     if single_reproj is None:
         single_reproj = stacked_img
 
-    _, _, std_single = sigma_clipped_stats(single_reproj[np.isfinite(single_reproj)], sigma=3.0)
-    _, _, std_stacked = sigma_clipped_stats(stacked_img[np.isfinite(stacked_img)], sigma=3.0)
+    _, std_single = _safe_bg_stats(single_reproj, sigma=3.0)
+    _, std_stacked = _safe_bg_stats(stacked_img, sigma=3.0)
     snr_gain = float(std_single / max(1e-6, std_stacked)) if std_stacked > 0 else float(np.sqrt(len(mefs)))
 
     stack_key = hashlib.sha256("_".join(cutout_fits_urls).encode()).hexdigest()[:16]
     single_png = conn.CACHE_DIR / f"stack_single_{stack_key}.png"
     coadd_png = conn.CACHE_DIR / f"stack_coadd_{stack_key}.png"
 
+    valid_stacked = stacked_img[np.isfinite(stacked_img)]
     vmin = float(-1.5 * std_stacked)
-    vmax = float(max(np.percentile(stacked_img[np.isfinite(stacked_img)], 99.2), 6.0 * std_stacked))
+    vmax = float(max(np.percentile(valid_stacked, 99.2), 6.0 * std_stacked)) if valid_stacked.size else max(1.0, 6.0 * std_stacked)
     norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=AsinhStretch(a=0.05), clip=True)
     cmap = matplotlib.colormaps["inferno"]
 
@@ -911,8 +933,8 @@ def _render_isolated_epoch(
 
     img = mef["image"].copy()
     img[(mef["flags"] & conn.UNUSABLE_BITMASK) != 0] = np.nan
-    _, med, std = sigma_clipped_stats(img[np.isfinite(img)], sigma=3.0)
-    img_sub = img - float(med)
+    med, std = _safe_bg_stats(img, sigma=3.0)
+    img_sub = img - med
 
     ny, nx = ref_shape
     reproj_fixed, _ = reproject_interp((img_sub, mef["wcs"]), ref_wcs, shape_out=ref_shape)
@@ -1177,7 +1199,7 @@ def generate_timelapse_sequence(
         ep_recs.sort(key=lambda r: abs(r["wavelength_um"] - ref_wavelength))
         chosen_ep = sorted(ep_recs[:per_epoch_target], key=lambda r: float(r["obs"]["mjd"]))
         for rec in chosen_ep:
-            rec["source"] = extract_source_at_radec(rec["obs"]["cutout_fits_url"], coord, refine_centroid=True)
+            rec["source"] = extract_source_at_radec(rec["obs"]["cutout_fits_url"], coord, refine_centroid=True, fov_arcmin=fov_arcmin)
             loaded_records.append(rec)
 
     loaded_records = loaded_records[:max_frames]

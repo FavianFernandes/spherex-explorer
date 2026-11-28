@@ -3,6 +3,7 @@ import { Link, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '@/components/layout/AppLayout'
 import HomePage from '@/features/search/HomePage'
 import ExploreWorkspace from '@/features/search/ExploreWorkspace'
+import { API_BASE_URL } from '@/api/baseUrl'
 
 class PageErrorBoundary extends Component<
   { children: ReactNode },
@@ -106,12 +107,10 @@ function InvestigationRestorePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
-
   useEffect(() => {
     if (!investigationId) return
 
-    fetch(`${apiBase}/api/share/${investigationId}`)
+    fetch(`${API_BASE_URL}/api/share/${investigationId}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`Shared investigation "${investigationId}" not found.`)
         return res.json()
@@ -137,7 +136,7 @@ function InvestigationRestorePage() {
         setError(err.message)
         setLoading(false)
       })
-  }, [investigationId, navigate, apiBase])
+  }, [investigationId, navigate])
 
   if (loading) {
     return (

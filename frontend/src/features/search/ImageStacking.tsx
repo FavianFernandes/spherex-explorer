@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Layers } from 'lucide-react'
+import { resolveApiUrl } from '@/api/baseUrl'
 import { useImageStack } from '@/api/hooks/useImageStack'
 import type { components } from '@/api/schema'
 
@@ -8,6 +9,7 @@ type ObservationFrame = components['schemas']['ObservationFrame']
 type Props = {
   ra: number
   dec: number
+  fovArcmin?: number
   frames: ObservationFrame[]
   currentDetector?: string
 }
@@ -15,26 +17,41 @@ type Props = {
 export default function ImageStacking({
   ra,
   dec,
+  fovArcmin = 15,
   frames,
   currentDetector,
 }: Props) {
   const stack = useImageStack()
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
-
-  const resolveUrl = (url?: string) => {
-    if (!url) return ''
-    if (url.startsWith('http://') || url.startsWith('https://')) return url
-    return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`
-  }
 
   // Filter frames by detector if selected
   const compatibleFrames = currentDetector
     ? frames.filter((f) => f.detector === currentDetector && f.cutout_fits_url)
     : frames.filter((f) => f.cutout_fits_url)
 
-  const [selectedUrls, setSelectedUrls] = useState<string[]>(() =>
-    compatibleFrames.slice(0, 4).map((f) => f.cutout_fits_url)
-  )
+  const compatibleKey = compatibleFrames.map((f) => f.obs_id).join('|')
+  const [selectionState, setSelectionState] = useState<{
+    key: string
+    urls: string[]
+  }>(() => ({
+    key: compatibleKey,
+    urls: compatibleFrames.slice(0, 4).map((f) => f.cutout_fits_url),
+  }))
+
+  const selectedUrls =
+    selectionState.key === compatibleKey
+      ? selectionState.urls
+      : compatibleFrames.slice(0, 4).map((f) => f.cutout_fits_url)
+
+  const setSelectedUrls = (updater: string[] | ((prev: string[]) => string[])) => {
+    setSelectionState((prev) => {
+      const current =
+        prev.key === compatibleKey
+          ? prev.urls
+          : compatibleFrames.slice(0, 4).map((f) => f.cutout_fits_url)
+      const next = typeof updater === 'function' ? updater(current) : updater
+      return { key: compatibleKey, urls: next }
+    })
+  }
 
   const toggleUrl = (url: string) => {
     setSelectedUrls((prev) =>
@@ -56,7 +73,8 @@ export default function ImageStacking({
       cutout_fits_urls: selectedUrls,
       ra,
       dec,
-    } as any)
+      fov_arcmin: fovArcmin,
+    })
   }
 
   return (
@@ -147,7 +165,7 @@ export default function ImageStacking({
               <p className="mb-2 text-xs font-semibold text-slate-400">Single Reference Exposure</p>
               <div className="flex min-h-48 items-center justify-center">
                 <img
-                  src={resolveUrl((stack.data as any).single_exposure_png_url || (stack.data as any).reference_preview_url)}
+                  src={resolveApiUrl(stack.data.single_exposure_png_url)}
                   alt="Single exposure"
                   className="max-h-64 object-contain rounded"
                 />
@@ -156,11 +174,11 @@ export default function ImageStacking({
 
             <div className="rounded-xl border border-cyan-500/40 bg-[#050a16] p-3 text-center">
               <p className="mb-2 text-xs font-semibold text-observatory-cyan">
-                Co-Added Stack ({(stack.data as any).n_stacked || (stack.data as any).n_exposures_combined} Exposures)
+                Co-Added Stack ({stack.data.n_stacked} Exposures)
               </p>
               <div className="flex min-h-48 items-center justify-center">
                 <img
-                  src={resolveUrl((stack.data as any).stacked_png_url)}
+                  src={resolveApiUrl(stack.data.stacked_png_url)}
                   alt="Stacked result"
                   className="max-h-64 object-contain rounded"
                 />
@@ -172,31 +190,31 @@ export default function ImageStacking({
             <div className="rounded-lg border border-observatory-border bg-[#080f1c] p-3">
               <p className="text-observatory-muted">Exposures Combined</p>
               <p className="mt-1 font-mono text-lg font-bold text-white">
-                {(stack.data as any).n_stacked || (stack.data as any).n_exposures_combined}
+                {stack.data.n_stacked}
               </p>
             </div>
             <div className="rounded-lg border border-observatory-border bg-[#080f1c] p-3">
               <p className="text-observatory-muted">Measured SNR Gain</p>
               <p className="mt-1 font-mono text-lg font-bold text-emerald-400">
-                {(stack.data as any).measured_snr_improvement_factor?.toFixed(2) || (stack.data as any).theoretical_snr_gain_factor?.toFixed(2) || '—'}×
+                {stack.data.measured_snr_improvement_factor?.toFixed(2) ?? '—'}×
               </p>
               <p className="text-[10px] text-observatory-muted">
-                Theoretical √N: {(stack.data as any).theoretical_sqrt_n_factor?.toFixed(2) || '—'}×
+                Theoretical √N: {stack.data.theoretical_sqrt_n_factor?.toFixed(2) ?? '—'}×
               </p>
             </div>
             <div className="rounded-lg border border-observatory-border bg-[#080f1c] p-3">
               <p className="text-observatory-muted">Background Noise (RMS)</p>
               <p className="mt-1 font-mono text-sm text-cyan-300">
-                {(stack.data as any).stacked_background_rms_mjy_sr != null
-                  ? `${(stack.data as any).stacked_background_rms_mjy_sr.toFixed(4)} MJy/sr`
+                {stack.data.stacked_background_rms_mjy_sr != null
+                  ? `${stack.data.stacked_background_rms_mjy_sr.toFixed(4)} MJy/sr`
                   : 'Noise reduced'}
               </p>
             </div>
           </div>
 
-          {(stack.data as any).scientific_warning && (
+          {stack.data.scientific_warning && (
             <p className="rounded-lg border border-amber-900/50 bg-amber-950/20 p-3 text-xs text-amber-300">
-              {(stack.data as any).scientific_warning}
+              {stack.data.scientific_warning}
             </p>
           )}
         </div>

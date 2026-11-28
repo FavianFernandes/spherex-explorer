@@ -11,8 +11,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
-        get: operations["health_api_health_get"];
+        /** Health Check */
+        get: operations["health_check_api_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -28,11 +28,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Preset Targets
-         * @description Return the 5 NASA-specified test targets with verified coordinates.
-         */
-        get: operations["get_preset_targets_api_targets_get"];
+        /** Get Sample Targets */
+        get: operations["get_sample_targets_api_targets_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -50,11 +47,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Search Spherex
-         * @description Search NASA/IPAC IRSA for SPHEREx observations covering (RA, Dec),
-         *     including `comparable_with` and `target_px` on every frame.
-         */
+        /** Search Spherex */
         post: operations["search_spherex_api_search_post"];
         delete?: never;
         options?: never;
@@ -69,11 +62,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Preview Png
-         * @description Download/cache the SPHEREx FITS cutout and return a fresh 1:1 pixel-accurate PNG.
-         */
+        /** Get Preview Png */
         get: operations["get_preview_png_api_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/preview/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Preview Metadata */
+        get: operations["get_preview_metadata_api_preview_metadata_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -89,11 +96,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Serve Cached Image
-         * @description Serve generated difference, stacked, or isolated object PNGs from cache.
-         */
-        get: operations["serve_cached_image_api_cache__filename__get"];
+        /** Get Cached Image */
+        get: operations["get_cached_image_api_cache__filename__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -111,12 +115,59 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Identify Clicked Object
-         * @description Convert a frontend mouse click (click_x, click_y) into sub-pixel centroided
-         *     celestial RA/Dec, `target_px`, aperture flux, SNR, and exact LVF wavelength.
-         */
-        post: operations["identify_clicked_object_api_objects_identify_post"];
+        /** Identify Object */
+        post: operations["identify_object_api_objects_identify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/objects/{object_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lookup Object By Id */
+        get: operations["lookup_object_by_id_api_objects__object_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/objects/track": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Track Object */
+        post: operations["track_object_api_objects_track_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/objects/lightcurve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract Lightcurve */
+        post: operations["extract_lightcurve_api_objects_lightcurve_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -132,12 +183,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Extract And Compare 102 Spectra
-         * @description Extract 102-band spectra across two survey epochs (~6 months apart) and
-         *     return Graph A (Earlier vs Later Spectrum) and Graph B (Difference Spectrum).
-         */
-        post: operations["extract_and_compare_102_spectra_api_spectra_compare_post"];
+        /** Compare Spectra */
+        post: operations["compare_spectra_api_spectra_compare_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -153,12 +200,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Create Difference Image
-         * @description Align two SPHEREx epochs onto a common WCS grid, compute Later - Earlier difference map,
-         *     and return `target_px` and candidates with their `match` field populated.
-         */
-        post: operations["create_difference_image_api_images_difference_post"];
+        /** Difference Images */
+        post: operations["difference_images_api_images_difference_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -174,12 +217,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Create Stacked Image
-         * @description Combine compatible exposures from the same detector and same survey epoch
-         *     using inverse-variance weighting to boost SNR for faint sources.
-         */
-        post: operations["create_stacked_image_api_images_stack_post"];
+        /** Stack Images */
+        post: operations["stack_images_api_images_stack_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -195,12 +234,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Isolate Moving Source
-         * @description Erase the background around a moving object across two epochs and calculate
-         *     its angular displacement (arcsec) and proper motion speed (arcsec/yr).
-         */
-        post: operations["isolate_moving_source_api_objects_isolate_post"];
+        /** Isolate Object */
+        post: operations["isolate_object_api_objects_isolate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/images/timelapse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Timelapse */
+        post: operations["create_timelapse_api_images_timelapse_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -216,13 +268,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Get Catalogue Overlays
-         * @description Retrieve ESA Gaia DR3 (propagated to the SPHEREx observation epoch via proper motion),
-         *     NASA AllWISE, and CSA NEOSSat (CADC) sources and project them onto cutout PNG pixels
-         *     per frame (`frame_px` on each source and `frame_overlays` per frame).
-         */
-        post: operations["get_catalogue_overlays_api_overlays_post"];
+        /** Get Multi Mission Overlays */
+        post: operations["get_multi_mission_overlays_api_overlays_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Share Link */
+        post: operations["create_share_link_api_share_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/share/{share_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Shared Investigation */
+        get: operations["get_shared_investigation_api_share__share_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -238,10 +319,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Submit Job
-         * @description Submit a long-running scientific processing task and receive a job ID.
-         */
+        /** Submit Job */
         post: operations["submit_job_api_jobs_post"];
         delete?: never;
         options?: never;
@@ -249,20 +327,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/jobs/{id}": {
+    "/api/jobs/{job_id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Job Status
-         * @description Retrieve the status, progress percentage, and result of an async processing job.
-         */
-        get: operations["get_job_status_api_jobs__id__get"];
+        /** Get Job Status */
+        get: operations["get_job_status_api_jobs__job_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Job */
+        post: operations["cancel_job_api_jobs__job_id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -275,16 +367,10 @@ export interface components {
     schemas: {
         /** CandidateMatch */
         CandidateMatch: {
-            /**
-             * Matched
-             * @description True if paired with an earlier/later residual or catalog source
-             */
+            /** Matched */
             matched: boolean;
-            /**
-             * Match Type
-             * @enum {string}
-             */
-            match_type: "moving_dipole_pair" | "variable_stationary" | "unmatched_residual";
+            /** Match Type */
+            match_type: string;
             /** Counterpart Ra Deg */
             counterpart_ra_deg?: number | null;
             /** Counterpart Dec Deg */
@@ -294,17 +380,21 @@ export interface components {
             separation_arcsec?: number | null;
             /** Apparent Motion Arcsec Yr */
             apparent_motion_arcsec_yr?: number | null;
+            /** Gaia Source Id */
+            gaia_source_id?: string | null;
+            /** Discovery Status */
+            discovery_status?: string | null;
         };
         /** CsaNeossatObservation */
         CsaNeossatObservation: {
             /** Observation Id */
             observation_id: string;
-            /** Target Name */
-            target_name: string;
             /** Instrument */
             instrument: string;
-            /** Mjd Start */
-            mjd_start: number | null;
+            /** Date Iso */
+            date_iso: string;
+            /** Cadc Download Url */
+            cadc_download_url: string;
         };
         /** DifferenceCandidate */
         DifferenceCandidate: {
@@ -328,7 +418,6 @@ export interface components {
             peak_residual_mjy_sr: number;
             /** Significance Sigma */
             significance_sigma: number;
-            /** @description Cross-epoch dipole or variability match metadata */
             match: components["schemas"]["CandidateMatch"];
         };
         /** DifferenceChannel102 */
@@ -338,11 +427,15 @@ export interface components {
             /** Wavelength Um */
             wavelength_um: number;
             /** Delta Flux */
-            delta_flux: number | null;
+            delta_flux?: number | null;
             /** Delta Flux Err */
-            delta_flux_err: number | null;
+            delta_flux_err?: number | null;
+            /** Delta Flux Ujy */
+            delta_flux_ujy?: number | null;
+            /** Delta Flux Err Ujy */
+            delta_flux_err_ujy?: number | null;
             /** Significance Sigma */
-            significance_sigma: number | null;
+            significance_sigma?: number | null;
             /** Comparable */
             comparable: boolean;
         };
@@ -353,9 +446,14 @@ export interface components {
             /** Late Cutout Fits Url */
             late_cutout_fits_url: string;
             /** Ra */
-            ra: string | number;
+            ra: number | string;
             /** Dec */
-            dec: string | number;
+            dec?: number | string | null;
+            /**
+             * Fov Arcmin
+             * @default 15
+             */
+            fov_arcmin: number;
         };
         /** DifferenceResponse */
         DifferenceResponse: {
@@ -363,21 +461,57 @@ export interface components {
             diff_key: string;
             /** Difference Png Url */
             difference_png_url: string;
+            /** Significance Png Url */
+            significance_png_url: string;
             /** Early Date */
             early_date: string;
             /** Late Date */
             late_date: string;
+            /** Early Wavelength Um */
+            early_wavelength_um: number;
+            /** Late Wavelength Um */
+            late_wavelength_um: number;
+            /** Photometric Scale Factor */
+            photometric_scale_factor: number;
+            /** Wavelength Compatible */
+            wavelength_compatible: boolean;
+            /** Scientific Warning */
+            scientific_warning?: string | null;
             /** Shape Ny Nx */
             shape_ny_nx: number[];
-            /** @description Pixel coordinates (x, y) of the target center on the difference image */
+            /**
+             * Pixel Scale Arcsec
+             * @default 6.15
+             */
+            pixel_scale_arcsec: number;
+            /**
+             * Orientation
+             * @default {
+             *       "north": "up",
+             *       "east": "left",
+             *       "origin": "top_left"
+             *     }
+             */
+            orientation: {
+                [key: string]: string;
+            };
+            /**
+             * Flux Unit
+             * @default MJy/sr
+             */
+            flux_unit: string;
+            /** Display Scale */
+            display_scale?: {
+                [key: string]: unknown;
+            } | null;
             target_px: components["schemas"]["PixelPoint"];
             /** Comparable With */
-            comparable_with?: string[];
+            comparable_with: string[];
             /** Candidates */
             candidates: components["schemas"]["DifferenceCandidate"][];
         };
-        /** EpochGroupResponse */
-        EpochGroupResponse: {
+        /** EpochBucket */
+        EpochBucket: {
             /** Epoch Id */
             epoch_id: string;
             /** Start Date */
@@ -395,6 +529,37 @@ export interface components {
         EpochSpectrumBundle: {
             /** Epoch Id */
             epoch_id: string;
+            /** Observation Date */
+            observation_date?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /**
+             * Detectors Available
+             * @default []
+             */
+            detectors_available: string[];
+            /**
+             * Wavelengths Um
+             * @default []
+             */
+            wavelengths_um: number[];
+            /**
+             * Fluxes
+             * @default []
+             */
+            fluxes: (number | null)[];
+            /**
+             * Flux Errs
+             * @default []
+             */
+            flux_errs: (number | null)[];
+            /**
+             * Fluxes Ujy
+             * @default []
+             */
+            fluxes_ujy: (number | null)[];
             /** Raw Points */
             raw_points: components["schemas"]["RawSpectralPoint"][];
             /** Channels 102 */
@@ -407,17 +572,11 @@ export interface components {
             /** Image Shape Ny Nx */
             image_shape_ny_nx: number[];
             target_px: components["schemas"]["PixelPoint"];
-            /**
-             * Gaia Px
-             * @description Map of Gaia source_id -> PixelPoint(x, y) in this frame
-             */
+            /** Gaia Px */
             gaia_px: {
                 [key: string]: components["schemas"]["PixelPoint"];
             };
-            /**
-             * Wise Px
-             * @description Map of WISE designation -> PixelPoint(x, y) in this frame
-             */
+            /** Wise Px */
             wise_px: {
                 [key: string]: components["schemas"]["PixelPoint"];
             };
@@ -439,11 +598,11 @@ export interface components {
             /** Pmdec Mas Yr */
             pmdec_mas_yr: number;
             /** Parallax Mas */
-            parallax_mas: number | null;
+            parallax_mas?: number | null;
             /** G Mag */
-            g_mag: number | null;
+            g_mag?: number | null;
             /** Bp Rp */
-            bp_rp: number | null;
+            bp_rp?: number | null;
             /** Ref Epoch */
             ref_epoch: number;
             /** Png X */
@@ -451,10 +610,7 @@ export interface components {
             /** Png Y */
             png_y: number;
             target_px: components["schemas"]["PixelPoint"];
-            /**
-             * Frame Px
-             * @description Pixel position (x, y) of this Gaia source on each requested frame (keyed by obs_id or 'default')
-             */
+            /** Frame Px */
             frame_px: {
                 [key: string]: components["schemas"]["PixelPoint"];
             };
@@ -472,68 +628,150 @@ export interface components {
             service: string;
             /** Version */
             version: string;
+            /** Quality Flag Definitions */
+            quality_flag_definitions: {
+                [key: string]: components["schemas"]["QualityFlagDefinition"];
+            };
         };
-        /** IdentifyRequest */
-        IdentifyRequest: {
-            /**
-             * Cutout Fits Url
-             * @description The `cutout_fits_url` from /api/search
-             */
+        /** IdentifyObjectRequest */
+        IdentifyObjectRequest: {
+            /** Cutout Fits Url */
             cutout_fits_url: string;
-            /**
-             * Click X
-             * @description Mouse click X inside the frontend image element
-             */
+            /** Click X */
             click_x: number;
-            /**
-             * Click Y
-             * @description Mouse click Y inside the frontend image element
-             */
+            /** Click Y */
             click_y: number;
             /**
              * Rendered Width
-             * @description Displayed pixel width of the image element
+             * @default 146
              */
             rendered_width: number;
             /**
              * Rendered Height
-             * @description Displayed pixel height of the image element
+             * @default 146
              */
             rendered_height: number;
+            /** Center Ra */
+            center_ra?: number | string | null;
+            /** Center Dec */
+            center_dec?: number | string | null;
+            /**
+             * Fov Arcmin
+             * @default 15
+             */
+            fov_arcmin: number;
         };
-        /** IsolateRequest */
-        IsolateRequest: {
+        /** IdentifyObjectResponse */
+        IdentifyObjectResponse: {
+            /** Object Id */
+            object_id: string;
+            /** Ra Deg */
+            ra_deg: number;
+            /** Dec Deg */
+            dec_deg: number;
+            /** Ra Hms */
+            ra_hms: string;
+            /** Dec Dms */
+            dec_dms: string;
+            /** Fits X */
+            fits_x: number;
+            /** Fits Y */
+            fits_y: number;
+            /** Png X */
+            png_x: number;
+            /** Png Y */
+            png_y: number;
+            target_px: components["schemas"]["PixelPoint"];
+            /** Flux Mjy Sr */
+            flux_mjy_sr: number;
+            /** Flux Err Mjy Sr */
+            flux_err_mjy_sr: number;
+            /** Flux Ujy */
+            flux_ujy: number;
+            /** Flux Err Ujy */
+            flux_err_ujy: number;
+            /** Background Mjy Sr */
+            background_mjy_sr: number;
+            /** Snr */
+            snr: number;
+            /** Position Err Arcsec */
+            position_err_arcsec: number;
+            /** Quality Flag */
+            quality_flag: number;
+            /** Flag Labels */
+            flag_labels: string[];
+            /** Is Usable */
+            is_usable: boolean;
+            /** Wavelength Um */
+            wavelength_um: number;
+            /** Bandwidth Um */
+            bandwidth_um: number;
+            /** Date Obs */
+            date_obs: string;
+            /** Detector */
+            detector: string;
+            /** Gaia Crossmatch */
+            gaia_crossmatch?: {
+                [key: string]: unknown;
+            } | null;
+            /** Wise Matches */
+            wise_matches?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        /** IsolateObjectRequest */
+        IsolateObjectRequest: {
             /** Early Cutout Fits Url */
             early_cutout_fits_url: string;
             /** Late Cutout Fits Url */
             late_cutout_fits_url: string;
             /** Object Ra */
-            object_ra: number;
+            object_ra: number | string;
             /** Object Dec */
-            object_dec: number;
+            object_dec?: number | string | null;
             /**
              * Isolation Radius Pix
              * @default 4.5
              */
             isolation_radius_pix: number;
         };
-        /** IsolateResponse */
-        IsolateResponse: {
+        /** IsolateObjectResponse */
+        IsolateObjectResponse: {
             early_epoch_isolated: components["schemas"]["IsolatedEpochFrame"];
             late_epoch_isolated: components["schemas"]["IsolatedEpochFrame"];
             /** Angular Displacement Arcsec */
             angular_displacement_arcsec: number;
+            /** Displacement Err Arcsec */
+            displacement_err_arcsec: number;
             /** Time Baseline Days */
             time_baseline_days: number;
             /** Apparent Motion Arcsec Per Yr */
             apparent_motion_arcsec_per_yr: number;
+            /** Motion Err Arcsec Per Yr */
+            motion_err_arcsec_per_yr: number;
         };
         /** IsolatedEpochFrame */
         IsolatedEpochFrame: {
             /** Isolated Png Url */
             isolated_png_url: string;
+            /** Follow Object Png Url */
+            follow_object_png_url: string;
+            /** Follow Object With Bg Png Url */
+            follow_object_with_bg_png_url: string;
             target_px: components["schemas"]["PixelPoint"];
-            source_measurement: components["schemas"]["SourceIdentificationResponse"];
+            source_measurement: components["schemas"]["IdentifyObjectResponse"];
+        };
+        /** JobCreateRequest */
+        JobCreateRequest: {
+            /**
+             * Job Type
+             * @enum {string}
+             */
+            job_type: "spectra_compare" | "image_difference" | "image_stack" | "object_isolate" | "timelapse";
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
         };
         /** JobStatusResponse */
         JobStatusResponse: {
@@ -545,7 +783,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "queued" | "running" | "completed" | "failed";
+            status: "queued" | "running" | "completed" | "failed" | "cancelled";
             /** Progress Pct */
             progress_pct: number;
             /** Created At */
@@ -553,40 +791,113 @@ export interface components {
             /** Updated At */
             updated_at: string;
             /** Result */
-            result?: {
-                [key: string]: unknown;
-            } | null;
+            result?: unknown | null;
             /** Error */
             error?: string | null;
         };
-        /** JobSubmitRequest */
-        JobSubmitRequest: {
+        /** LightCurvePoint */
+        LightCurvePoint: {
+            /** Obs Id */
+            obs_id: string;
+            /** Date Iso */
+            date_iso: string;
+            /** Mjd */
+            mjd: number;
+            /** Detector */
+            detector: string;
+            /** Wavelength Um */
+            wavelength_um: number;
+            /** Flux Mjy Sr */
+            flux_mjy_sr: number;
+            /** Flux Err Mjy Sr */
+            flux_err_mjy_sr: number;
+            /** Flux Ujy */
+            flux_ujy: number;
+            /** Snr */
+            snr: number;
+            /** Quality Flag */
+            quality_flag: number;
+            /** Flag Labels */
+            flag_labels: string[];
+            /** Is Usable */
+            is_usable: boolean;
+        };
+        /** LightCurveRequest */
+        LightCurveRequest: {
+            /** Ra */
+            ra: number | string;
+            /** Dec */
+            dec?: number | string | null;
+            /** Detector */
+            detector?: string | null;
             /**
-             * Job Type
-             * @enum {string}
+             * Max Exposures
+             * @default 24
              */
-            job_type: "spectra_compare" | "difference_image" | "image_stack" | "object_isolate";
-            /** Payload */
-            payload: {
-                [key: string]: unknown;
-            };
+            max_exposures: number;
+        };
+        /** LightCurveResponse */
+        LightCurveResponse: {
+            /** Object Id */
+            object_id: string;
+            /** Ra Deg */
+            ra_deg: number;
+            /** Dec Deg */
+            dec_deg: number;
+            /** Flux Unit */
+            flux_unit: string;
+            /** Points */
+            points: components["schemas"]["LightCurvePoint"][];
         };
         /** NominalChannel102 */
         NominalChannel102: {
             /** Channel */
             channel: number;
+            /** Detector */
+            detector: string;
             /** Wavelength Um */
             wavelength_um: number;
             /** Bandwidth Um */
             bandwidth_um: number;
             /** Flux */
-            flux: number | null;
+            flux?: number | null;
             /** Flux Err */
-            flux_err: number | null;
+            flux_err?: number | null;
+            /** Flux Ujy */
+            flux_ujy?: number | null;
+            /** Flux Err Ujy */
+            flux_err_ujy?: number | null;
             /** N Exposures */
             n_exposures: number;
+            /**
+             * Directly Measured
+             * @default false
+             */
+            directly_measured: boolean;
             /** Measured */
             measured: boolean;
+        };
+        /** ObjectTrackRequest */
+        ObjectTrackRequest: {
+            /** Object Ra */
+            object_ra: number | string;
+            /** Object Dec */
+            object_dec?: number | string | null;
+            /** Cutout Fits Urls */
+            cutout_fits_urls: string[];
+        };
+        /** ObjectTrackResponse */
+        ObjectTrackResponse: {
+            /** Object Id */
+            object_id: string;
+            /** Track Points */
+            track_points: components["schemas"]["TrackPoint"][];
+            /** Total Displacement Arcsec */
+            total_displacement_arcsec: number;
+            /** Apparent Motion Arcsec Yr */
+            apparent_motion_arcsec_yr: number;
+            /** Motion Err Arcsec Yr */
+            motion_err_arcsec_yr: number;
         };
         /** ObservationFrame */
         ObservationFrame: {
@@ -604,58 +915,92 @@ export interface components {
             em_max_um: number;
             /** Release */
             release: string;
+            /**
+             * Survey Week
+             * @default UNKNOWN
+             */
+            survey_week: string | null;
+            /**
+             * Survey Pass
+             * @default UNKNOWN
+             */
+            survey_pass: string | null;
+            /**
+             * Pixel Scale Arcsec
+             * @default 6.15
+             */
+            pixel_scale_arcsec: number;
+            /**
+             * Flux Unit
+             * @default MJy/sr
+             */
+            flux_unit: string;
             /** Full Fits Url */
             full_fits_url: string;
             /** Cutout Fits Url */
             cutout_fits_url: string;
             /** Preview Png Url */
             preview_png_url: string;
-            /** @description Pixel coordinates (x, y) of the queried target on this image frame */
             target_px: components["schemas"]["PixelPoint"];
-            /**
-             * Comparable With
-             * @description List of observation IDs (obs_id) sharing the same detector that can be validly compared with this frame
-             */
+            /** Comparable With */
             comparable_with: string[];
         };
-        /** OverlayRequest */
-        OverlayRequest: {
+        /** OverlaysRequest */
+        OverlaysRequest: {
             /** Cutout Fits Url */
             cutout_fits_url: string;
             /** Ra */
-            ra: string | number;
+            ra: number | string;
             /** Dec */
-            dec: string | number;
+            dec?: number | string | null;
             /**
              * Fov Arcmin
              * @default 15
              */
             fov_arcmin: number;
             /**
-             * Frame Cutout Urls
-             * @description Optional map of frame_id (obs_id) -> cutout_fits_url to compute overlay pixel positions across multiple frames
+             * Include Wise Image Layer
+             * @default true
              */
+            include_wise_image_layer: boolean;
+            /**
+             * North Up Aligned
+             * @default true
+             */
+            north_up_aligned: boolean;
+            /** Frame Cutout Urls */
             frame_cutout_urls?: {
                 [key: string]: string;
             } | null;
         };
-        /** OverlayResponse */
-        OverlayResponse: {
+        /** OverlaysResponse */
+        OverlaysResponse: {
             /** Image Shape Ny Nx */
             image_shape_ny_nx: number[];
             /** Spherex Obs Date */
             spherex_obs_date: string;
+            /** Orientation */
+            orientation: {
+                [key: string]: string;
+            };
             target_px: components["schemas"]["PixelPoint"];
+            /** Fov Coverage Fraction */
+            fov_coverage_fraction: number;
+            /** Coverage Complete */
+            coverage_complete: boolean;
+            /** Coverage Warning */
+            coverage_warning?: string | null;
+            /** Catalog Warnings */
+            catalog_warnings: string[];
+            /** Wise Image Png Url */
+            wise_image_png_url?: string | null;
             /** Gaia Dr3 Sources */
             gaia_dr3_sources: components["schemas"]["GaiaOverlaySource"][];
             /** Wise Sources */
             wise_sources: components["schemas"]["WiseOverlaySource"][];
             /** Csa Neossat Observations */
             csa_neossat_observations: components["schemas"]["CsaNeossatObservation"][];
-            /**
-             * Frame Overlays
-             * @description Overlay pixel positions grouped per frame ID
-             */
+            /** Frame Overlays */
             frame_overlays: {
                 [key: string]: components["schemas"]["FrameOverlayPositions"];
             };
@@ -664,15 +1009,9 @@ export interface components {
         };
         /** PixelPoint */
         PixelPoint: {
-            /**
-             * X
-             * @description Horizontal pixel coordinate in browser PNG (origin top-left)
-             */
+            /** X */
             x: number;
-            /**
-             * Y
-             * @description Vertical pixel coordinate in browser PNG (origin top-left)
-             */
+            /** Y */
             y: number;
         };
         /** PresetTarget */
@@ -694,6 +1033,17 @@ export interface components {
             /** Description */
             description: string;
         };
+        /** QualityFlagDefinition */
+        QualityFlagDefinition: {
+            /** Bit */
+            bit: number;
+            /** Mask */
+            mask: number;
+            /** Description */
+            description: string;
+            /** Unusable */
+            unusable: boolean;
+        };
         /** RawSpectralPoint */
         RawSpectralPoint: {
             /** Obs Id */
@@ -712,30 +1062,41 @@ export interface components {
             flux: number;
             /** Flux Err */
             flux_err: number;
+            /** Flux Ujy */
+            flux_ujy: number;
+            /** Flux Err Ujy */
+            flux_err_ujy: number;
             /** Snr */
             snr: number;
             /** Quality Flag */
             quality_flag: number;
+            /** Flag Labels */
+            flag_labels: string[];
+            /** Is Usable */
+            is_usable: boolean;
         };
         /** SearchRequest */
         SearchRequest: {
             /**
              * Ra
-             * @example 08h55m10.831s
-             * @example 133.795129
+             * @description Right Ascension in degrees, HMS, or target name
              */
-            ra: string | number;
+            ra: number | string;
             /**
              * Dec
-             * @example -07d14m42.53s
-             * @example -7.245147
+             * @description Declination in degrees or DMS
              */
-            dec: string | number;
+            dec?: number | string | null;
             /**
              * Fov Arcmin
              * @default 15
              */
             fov_arcmin: number;
+            /**
+             * Detector
+             * @description Optional filter for detector 1..6 or D1..D6
+             */
+            detector?: string | null;
         };
         /** SearchResponse */
         SearchResponse: {
@@ -749,81 +1110,127 @@ export interface components {
             total_observations: number;
             /** Detectors */
             detectors: string[];
+            /**
+             * Pixel Scale Arcsec
+             * @default 6.15
+             */
+            pixel_scale_arcsec: number;
+            /**
+             * Flux Unit
+             * @default MJy/sr
+             */
+            flux_unit: string;
+            /**
+             * Orientation
+             * @default {
+             *       "north": "up",
+             *       "east": "left",
+             *       "origin": "top_left"
+             *     }
+             */
+            orientation: {
+                [key: string]: string;
+            };
             /** Wiseview Url */
             wiseview_url: string;
-            /** @description Default target pixel position (x, y) in the cutout viewer */
             target_px: components["schemas"]["PixelPoint"];
             /** Epochs */
-            epochs: components["schemas"]["EpochGroupResponse"][];
+            epochs: components["schemas"]["EpochBucket"][];
         };
-        /** SourceIdentificationResponse */
-        SourceIdentificationResponse: {
-            /** Object Id */
-            object_id: string;
-            /** Ra Deg */
-            ra_deg: number;
-            /** Dec Deg */
-            dec_deg: number;
-            /** Ra Hms */
-            ra_hms: string;
-            /** Dec Dms */
-            dec_dms: string;
-            /** Fits X */
-            fits_x: number;
-            /** Fits Y */
-            fits_y: number;
-            /** Png X */
-            png_x: number;
-            /** Png Y */
-            png_y: number;
-            /** @description Centroided pixel position (x, y) on the browser image */
-            target_px: components["schemas"]["PixelPoint"];
-            /** Flux Mjy Sr */
-            flux_mjy_sr: number;
-            /** Flux Err Mjy Sr */
-            flux_err_mjy_sr: number;
-            /** Background Mjy Sr */
-            background_mjy_sr: number;
-            /** Snr */
-            snr: number;
-            /** Quality Flag */
-            quality_flag: number;
-            /** Is Usable */
-            is_usable: boolean;
-            /** Wavelength Um */
-            wavelength_um: number | null;
-            /** Bandwidth Um */
-            bandwidth_um: number | null;
-            /** Date Obs */
-            date_obs: string;
+        /** ShareInvestigationRequest */
+        ShareInvestigationRequest: {
+            /** Ra */
+            ra: number | string;
+            /** Dec */
+            dec: number | string;
+            /** Target Name */
+            target_name?: string | null;
+            /**
+             * Fov Arcmin
+             * @default 15
+             */
+            fov_arcmin: number;
             /** Detector */
-            detector: string;
+            detector?: string | null;
+            /** Wavelength Band */
+            wavelength_band?: string | null;
+            /** Selected Epoch */
+            selected_epoch?: string | null;
+            /** Selected Obs Id */
+            selected_obs_id?: string | null;
+            /** Selected Cutout Fits Url */
+            selected_cutout_fits_url?: string | null;
+            /** Earlier Epoch */
+            earlier_epoch?: string | null;
+            /** Later Epoch */
+            later_epoch?: string | null;
+            /** Compared Epochs */
+            compared_epochs?: string[] | null;
+            /** Hidden Epochs */
+            hidden_epochs?: {
+                [key: string]: boolean;
+            } | null;
+            /** Early Cutout Fits Url */
+            early_cutout_fits_url?: string | null;
+            /** Late Cutout Fits Url */
+            late_cutout_fits_url?: string | null;
+            /** Selected Object Id */
+            selected_object_id?: string | null;
+            /** Selected Object Ra */
+            selected_object_ra?: number | null;
+            /** Selected Object Dec */
+            selected_object_dec?: number | null;
+            /**
+             * Alignment Mode
+             * @default fixed_sky
+             * @enum {string}
+             */
+            alignment_mode: "fixed_sky" | "follow_object";
+            /**
+             * Active View
+             * @default viewer
+             */
+            active_view: string;
+            /** Overlays Enabled */
+            overlays_enabled?: string[];
+            /**
+             * Playback Speed
+             * @default 1
+             */
+            playback_speed: number;
+            /**
+             * Loop
+             * @default true
+             */
+            loop: boolean;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ShareRecord */
+        ShareRecord: {
+            /** Share Id */
+            share_id: string;
+            /** Share Query String */
+            share_query_string: string;
+            /** Created At */
+            created_at: string;
+            state: components["schemas"]["ShareInvestigationRequest"];
         };
         /** SpectrumCompareRequest */
         SpectrumCompareRequest: {
-            /**
-             * Ra
-             * @example 133.795129
-             */
-            ra: string | number;
-            /**
-             * Dec
-             * @example -7.245147
-             */
-            dec: string | number;
-            /**
-             * Earlier Epoch
-             * @example 2025-S1
-             */
+            /** Ra */
+            ra: number | string;
+            /** Dec */
+            dec?: number | string | null;
+            /** Epochs */
+            epochs?: string[] | null;
+            /** Earlier Epoch */
             earlier_epoch?: string | null;
-            /**
-             * Later Epoch
-             * @example 2026-S1
-             */
+            /** Later Epoch */
             later_epoch?: string | null;
             /**
              * Max Exposures Per Epoch
-             * @default 36
+             * @default 24
              */
             max_exposures_per_epoch: number;
         };
@@ -833,44 +1240,260 @@ export interface components {
             ra_deg: number;
             /** Dec Deg */
             dec_deg: number;
+            /**
+             * Flux Unit
+             * @default MJy/sr
+             */
+            flux_unit: string;
+            /**
+             * Point Source Flux Unit
+             * @default uJy
+             */
+            point_source_flux_unit: string;
+            /** Spectrum Png Url */
+            spectrum_png_url?: string | null;
             /** Available Epochs */
             available_epochs: string[];
+            /** Epoch Spectra */
+            epoch_spectra: components["schemas"]["EpochSpectrumBundle"][];
             earlier_epoch: components["schemas"]["EpochSpectrumBundle"];
-            later_epoch: components["schemas"]["EpochSpectrumBundle"] | null;
+            later_epoch: components["schemas"]["EpochSpectrumBundle"];
             /** Difference Spectrum 102 */
             difference_spectrum_102: components["schemas"]["DifferenceChannel102"][];
         };
         /** StackRequest */
         StackRequest: {
-            /**
-             * Cutout Fits Urls
-             * @description List of cutout URLs from the same detector and epoch
-             */
+            /** Cutout Fits Urls */
             cutout_fits_urls: string[];
             /** Ra */
-            ra: string | number;
+            ra: number | string;
             /** Dec */
-            dec: string | number;
+            dec?: number | string | null;
+            /**
+             * Fov Arcmin
+             * @default 15
+             */
+            fov_arcmin: number;
         };
         /** StackResponse */
         StackResponse: {
-            /** Stack Key */
-            stack_key: string;
-            /** Stacked Png Url */
-            stacked_png_url: string;
-            /** Reference Preview Url */
-            reference_preview_url: string;
-            /** N Exposures Combined */
-            n_exposures_combined: number;
-            /** Theoretical Snr Gain Factor */
-            theoretical_snr_gain_factor: number;
+            /** N Stacked */
+            n_stacked: number;
             /** Detector */
             detector: string;
+            /** Single Exposure Png Url */
+            single_exposure_png_url: string;
+            /** Stacked Png Url */
+            stacked_png_url: string;
+            /** Single Background Rms Mjy Sr */
+            single_background_rms_mjy_sr: number;
+            /** Stacked Background Rms Mjy Sr */
+            stacked_background_rms_mjy_sr: number;
+            /** Measured Snr Improvement Factor */
+            measured_snr_improvement_factor: number;
+            /** Theoretical Sqrt N Factor */
+            theoretical_sqrt_n_factor: number;
+            /** Time Span Days */
+            time_span_days: number;
+            /** Scientific Warning */
+            scientific_warning?: string | null;
+            target_px: components["schemas"]["PixelPoint"];
+        };
+        /** TimeLapseFrameMetadata */
+        TimeLapseFrameMetadata: {
+            /** Frame Index */
+            frame_index: number;
+            /** Obs Id */
+            obs_id: string;
+            /** Epoch Id */
+            epoch_id: string;
+            /** Detector */
+            detector: string;
+            /** Date Iso */
+            date_iso: string;
+            /** Mjd */
+            mjd: number;
+            /** Wavelength Um */
+            wavelength_um: number;
+            /** Bandwidth Um */
+            bandwidth_um: number;
+            /** Usable Pixel Fraction */
+            usable_pixel_fraction: number;
+            /** Background Mjy Sr */
+            background_mjy_sr: number;
+            /** Noise Std Mjy Sr */
+            noise_std_mjy_sr: number;
+            /** Object Ra Deg */
+            object_ra_deg: number;
+            /** Object Dec Deg */
+            object_dec_deg: number;
+            /** Flux Mjy Sr */
+            flux_mjy_sr?: number | null;
+            /** Flux Ujy */
+            flux_ujy?: number | null;
+            /** Snr */
+            snr?: number | null;
+            /** Quality Flag */
+            quality_flag: number;
+            /** Flag Labels */
+            flag_labels: string[];
+            target_px: components["schemas"]["PixelPoint"];
+            /** Cutout Fits Url */
+            cutout_fits_url: string;
+            /** Frame Png Url */
+            frame_png_url: string;
+        };
+        /** TimeLapseRequest */
+        TimeLapseRequest: {
+            /**
+             * Ra
+             * @description Right Ascension in degrees or HMS string
+             */
+            ra: number | string;
+            /**
+             * Dec
+             * @description Declination in degrees or DMS string
+             */
+            dec?: number | string | null;
+            /**
+             * Fov Arcmin
+             * @default 15
+             */
+            fov_arcmin: number;
+            /**
+             * Detector
+             * @description 'auto' or 'D1'..'D6' / '1'..'6'
+             * @default auto
+             */
+            detector: string | null;
+            /**
+             * Wavelength Band
+             * @default selected_band
+             */
+            wavelength_band: string | null;
+            /**
+             * Alignment Mode
+             * @default fixed_sky
+             * @enum {string}
+             */
+            alignment_mode: "fixed_sky" | "follow_object";
+            /**
+             * Sampling Mode
+             * @default epoch_best
+             * @enum {string}
+             */
+            sampling_mode: "epoch_best" | "all_compatible";
+            /**
+             * Isolate Moving Object
+             * @default false
+             */
+            isolate_moving_object: boolean;
+            /**
+             * Max Frames
+             * @default 8
+             */
+            max_frames: number;
+            /**
+             * Playback Speed
+             * @default 1
+             */
+            playback_speed: number;
+            /**
+             * Loop
+             * @default true
+             */
+            loop: boolean;
+            /** Target Name */
+            target_name?: string | null;
+        };
+        /** TimeLapseResponse */
+        TimeLapseResponse: {
+            /** Query Ra Deg */
+            query_ra_deg: number;
+            /** Query Dec Deg */
+            query_dec_deg: number;
+            /** Fov Arcmin */
+            fov_arcmin: number;
+            /** Detector */
+            detector: string;
+            /** Available Detectors */
+            available_detectors: string[];
+            /** Alignment Mode */
+            alignment_mode: string;
+            /** Sampling Mode */
+            sampling_mode: string;
+            /** Isolate Moving Object */
+            isolate_moving_object: boolean;
+            /** Can Animate */
+            can_animate: boolean;
+            /** Total Frames */
+            total_frames: number;
+            /** Epochs Covered */
+            epochs_covered: string[];
+            /** Ordered Dates */
+            ordered_dates: string[];
             /** Shape Ny Nx */
             shape_ny_nx: number[];
+            /** Pixel Scale Arcsec */
+            pixel_scale_arcsec: number;
+            /** Orientation */
+            orientation: {
+                [key: string]: string;
+            };
+            /** Flux Unit */
+            flux_unit: string;
+            /** Display Scale */
+            display_scale: {
+                [key: string]: unknown;
+            };
+            /** Angular Displacement Arcsec */
+            angular_displacement_arcsec: number;
+            /** Time Baseline Days */
+            time_baseline_days: number;
+            /** Frame Duration Ms */
+            frame_duration_ms: number;
+            /** Gif Url */
+            gif_url: string;
+            /** Gif Download Url */
+            gif_download_url: string;
+            /** Download Filename */
+            download_filename: string;
+            /** Scientific Warning */
+            scientific_warning?: string | null;
+            /** Frames */
+            frames: components["schemas"]["TimeLapseFrameMetadata"][];
+        };
+        /** TrackPoint */
+        TrackPoint: {
+            /** Obs Id */
+            obs_id: string;
+            /** Date Iso */
+            date_iso: string;
+            /** Mjd */
+            mjd: number;
+            /** Detector */
+            detector: string;
+            /** Wavelength Um */
+            wavelength_um: number;
+            /** Ra Deg */
+            ra_deg: number;
+            /** Dec Deg */
+            dec_deg: number;
+            /** Png X */
+            png_x: number;
+            /** Png Y */
+            png_y: number;
             target_px: components["schemas"]["PixelPoint"];
-            /** Comparable With */
-            comparable_with?: string[];
+            /** Flux Mjy Sr */
+            flux_mjy_sr: number;
+            /** Flux Ujy */
+            flux_ujy: number;
+            /** Snr */
+            snr: number;
+            /** Position Err Arcsec */
+            position_err_arcsec: number;
+            /** Is Usable */
+            is_usable: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -894,18 +1517,19 @@ export interface components {
             /** Dec Deg */
             dec_deg: number;
             /** W1 Mag */
-            w1_mag: number | null;
+            w1_mag?: number | null;
             /** W2 Mag */
-            w2_mag: number | null;
+            w2_mag?: number | null;
+            /** W3 Mag */
+            w3_mag?: number | null;
+            /** W4 Mag */
+            w4_mag?: number | null;
             /** Png X */
             png_x: number;
             /** Png Y */
             png_y: number;
             target_px: components["schemas"]["PixelPoint"];
-            /**
-             * Frame Px
-             * @description Pixel position (x, y) of this WISE source on each requested frame (keyed by obs_id or 'default')
-             */
+            /** Frame Px */
             frame_px: {
                 [key: string]: components["schemas"]["PixelPoint"];
             };
@@ -919,7 +1543,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_api_health_get: {
+    health_check_api_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -939,7 +1563,7 @@ export interface operations {
             };
         };
     };
-    get_preset_targets_api_targets_get: {
+    get_sample_targets_api_targets_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -995,10 +1619,12 @@ export interface operations {
     get_preview_png_api_preview_get: {
         parameters: {
             query: {
+                /** @description IRSA cutout FITS URL */
                 cutout_url: string;
-                ra: number;
-                dec: number;
-                cmap?: string;
+                ra?: number | null;
+                dec?: number | null;
+                fov_arcmin?: number;
+                north_up?: boolean;
             };
             header?: never;
             path?: never;
@@ -1012,7 +1638,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "image/png": unknown;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -1026,9 +1652,47 @@ export interface operations {
             };
         };
     };
-    serve_cached_image_api_cache__filename__get: {
+    get_preview_metadata_api_preview_metadata_get: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description IRSA cutout FITS URL */
+                cutout_url: string;
+                ra?: number | null;
+                dec?: number | null;
+                fov_arcmin?: number;
+                north_up?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cached_image_api_cache__filename__get: {
+        parameters: {
+            query?: {
+                download_name?: string | null;
+            };
             header?: never;
             path: {
                 filename: string;
@@ -1043,7 +1707,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "image/png": unknown;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -1057,7 +1721,7 @@ export interface operations {
             };
         };
     };
-    identify_clicked_object_api_objects_identify_post: {
+    identify_object_api_objects_identify_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1066,7 +1730,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["IdentifyRequest"];
+                "application/json": components["schemas"]["IdentifyObjectRequest"];
             };
         };
         responses: {
@@ -1076,7 +1740,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SourceIdentificationResponse"];
+                    "application/json": components["schemas"]["IdentifyObjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1090,7 +1754,104 @@ export interface operations {
             };
         };
     };
-    extract_and_compare_102_spectra_api_spectra_compare_post: {
+    lookup_object_by_id_api_objects__object_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                object_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    track_object_api_objects_track_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObjectTrackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObjectTrackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_lightcurve_api_objects_lightcurve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LightCurveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LightCurveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compare_spectra_api_spectra_compare_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1123,7 +1884,7 @@ export interface operations {
             };
         };
     };
-    create_difference_image_api_images_difference_post: {
+    difference_images_api_images_difference_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1156,7 +1917,7 @@ export interface operations {
             };
         };
     };
-    create_stacked_image_api_images_stack_post: {
+    stack_images_api_images_stack_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1189,7 +1950,7 @@ export interface operations {
             };
         };
     };
-    isolate_moving_source_api_objects_isolate_post: {
+    isolate_object_api_objects_isolate_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1198,7 +1959,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["IsolateRequest"];
+                "application/json": components["schemas"]["IsolateObjectRequest"];
             };
         };
         responses: {
@@ -1208,7 +1969,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IsolateResponse"];
+                    "application/json": components["schemas"]["IsolateObjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1222,7 +1983,7 @@ export interface operations {
             };
         };
     };
-    get_catalogue_overlays_api_overlays_post: {
+    create_timelapse_api_images_timelapse_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1231,7 +1992,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["OverlayRequest"];
+                "application/json": components["schemas"]["TimeLapseRequest"];
             };
         };
         responses: {
@@ -1241,7 +2002,104 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OverlayResponse"];
+                    "application/json": components["schemas"]["TimeLapseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_multi_mission_overlays_api_overlays_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverlaysRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverlaysResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_share_link_api_share_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareInvestigationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_shared_investigation_api_share__share_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                share_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareRecord"];
                 };
             };
             /** @description Validation Error */
@@ -1264,7 +2122,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["JobSubmitRequest"];
+                "application/json": components["schemas"]["JobCreateRequest"];
             };
         };
         responses: {
@@ -1288,13 +2146,43 @@ export interface operations {
             };
         };
     };
-    get_job_status_api_jobs__id__get: {
+    get_job_status_api_jobs__job_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Unique job identifier */
-                id: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_api_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
             };
             cookie?: never;
         };

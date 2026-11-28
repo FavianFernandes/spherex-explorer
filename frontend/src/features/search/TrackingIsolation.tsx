@@ -1,33 +1,33 @@
 import { useState } from 'react'
+import { API_BASE_URL, resolveApiUrl } from '@/api/baseUrl'
 import { useIsolateObject } from '@/api/hooks/useIsolateObject'
 import type { components } from '@/api/schema'
 
 type ObservationFrame = components['schemas']['ObservationFrame']
-type Source = components['schemas']['SourceIdentificationResponse']
+type Source = components['schemas']['IdentifyObjectResponse']
+type ObjectTrackResponse = components['schemas']['ObjectTrackResponse']
+type LightCurveResponse = components['schemas']['LightCurveResponse']
 
 type Props = {
+  ra: number
+  dec: number
   firstFrame?: ObservationFrame
   secondFrame?: ObservationFrame
   source?: Source
 }
 
 export default function TrackingIsolation({
+  ra,
+  dec,
   firstFrame,
   secondFrame,
   source,
 }: Props) {
   const isolation = useIsolateObject()
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
 
-  const resolveUrl = (url?: string) => {
-    if (!url) return ''
-    if (url.startsWith('http://') || url.startsWith('https://')) return url
-    return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`
-  }
-
-  const [trackData, setTrackData] = useState<any>(null)
+  const [trackData, setTrackData] = useState<ObjectTrackResponse | null>(null)
   const [trackLoading, setTrackLoading] = useState(false)
-  const [lightcurveData, setLightcurveData] = useState<any>(null)
+  const [lightcurveData, setLightcurveData] = useState<LightCurveResponse | null>(null)
   const [lcLoading, setLcLoading] = useState(false)
 
   const canIsolate =
@@ -54,7 +54,7 @@ export default function TrackingIsolation({
     if (!source || !firstFrame || !secondFrame) return
     setTrackLoading(true)
     try {
-      const res = await fetch(`${apiBase}/api/objects/track`, {
+      const res = await fetch(`${API_BASE_URL}/api/objects/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,7 +64,7 @@ export default function TrackingIsolation({
         }),
       })
       if (res.ok) {
-        const json = await res.json()
+        const json = (await res.json()) as ObjectTrackResponse
         setTrackData(json)
       }
     } catch {
@@ -75,22 +75,21 @@ export default function TrackingIsolation({
   }
 
   const fetchLightcurve = async () => {
-    if (!source && !firstFrame) return
-    const ra = source ? source.ra_deg : firstFrame ? 269.452075 : 0
-    const dec = source ? source.dec_deg : firstFrame ? 4.693364 : 0
+    const targetRa = source ? source.ra_deg : ra
+    const targetDec = source ? source.dec_deg : dec
     setLcLoading(true)
     try {
-      const res = await fetch(`${apiBase}/api/objects/lightcurve`, {
+      const res = await fetch(`${API_BASE_URL}/api/objects/lightcurve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ra,
-          dec,
+          ra: targetRa,
+          dec: targetDec,
           max_exposures: 12,
         }),
       })
       if (res.ok) {
-        const json = await res.json()
+        const json = (await res.json()) as LightCurveResponse
         setLightcurveData(json)
       }
     } catch {
@@ -165,7 +164,7 @@ export default function TrackingIsolation({
             <div className="overflow-hidden rounded-xl border border-observatory-border bg-[#050a16] p-2 text-center">
               <p className="mb-2 text-xs font-semibold text-slate-400">Earlier Isolated Epoch</p>
               <img
-                src={resolveUrl(isolation.data.early_epoch_isolated.isolated_png_url)}
+                src={resolveApiUrl(isolation.data.early_epoch_isolated.isolated_png_url)}
                 alt="Earlier epoch isolated"
                 className="max-h-60 w-full object-contain rounded"
               />
@@ -173,7 +172,7 @@ export default function TrackingIsolation({
             <div className="overflow-hidden rounded-xl border border-observatory-border bg-[#050a16] p-2 text-center">
               <p className="mb-2 text-xs font-semibold text-slate-400">Later Isolated Epoch</p>
               <img
-                src={resolveUrl(isolation.data.late_epoch_isolated.isolated_png_url)}
+                src={resolveApiUrl(isolation.data.late_epoch_isolated.isolated_png_url)}
                 alt="Later epoch isolated"
                 className="max-h-60 w-full object-contain rounded"
               />
@@ -228,7 +227,7 @@ export default function TrackingIsolation({
                 Extracted <strong className="text-cyan-300 font-mono">{lightcurveData.points.length}</strong> time-series photometric samples ({lightcurveData.flux_unit}):
               </p>
               <div className="max-h-32 overflow-y-auto space-y-1 font-mono text-[11px]">
-                {lightcurveData.points.slice(0, 8).map((pt: any, i: number) => (
+                {lightcurveData.points.slice(0, 8).map((pt, i: number) => (
                   <div key={i} className="flex justify-between text-slate-400 border-b border-slate-800 pb-0.5">
                     <span>{pt.date_iso.slice(0, 10)} ({pt.detector})</span>
                     <span className="text-white">{pt.flux_mjy_sr?.toFixed(4)} MJy/sr (SNR: {pt.snr?.toFixed(1)})</span>
